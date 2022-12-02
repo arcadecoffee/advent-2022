@@ -6,37 +6,57 @@ from advent_tools import get_daily_input
 DAY = 2
 
 
-def calculate_score() -> int:
+def calculate_score(a: str, b: str) -> int:
     """
     Calculate tournament score with Part 1 strategy
     """
     win_loss_values = {
-        "A": {"X": 3, "Y": 6, "Z": 0},
-        "B": {"X": 0, "Y": 3, "Z": 6},
-        "C": {"X": 6, "Y": 0, "Z": 3}
+        "rock": {"rock": 3, "paper": 6, "scissors": 0},
+        "paper": {"rock": 0, "paper": 3, "scissors": 6},
+        "scissors": {"rock": 6, "paper": 0, "scissors": 3}
     }
 
-    move_played_values = {"X": 1, "Y": 2, "Z": 3}
+    move_played_values = {"rock": 1, "paper": 2, "scissors": 3}
 
-    total_score = 0
-    for line in get_daily_input(DAY):
-        opponent, me = line.split(" ")
-        total_score += win_loss_values[opponent][me] + move_played_values[me]
+    return win_loss_values[a][b] + move_played_values[b]
 
-    return total_score
 
 def part_1() -> int:
     """
-    Total calories carried by the elf with the most calories
+    Solve part 1
     """
-    return calculate_score()
+    translation = ["rock", "paper", "scissors"]
+
+    total_score = 0
+    for line in get_daily_input(DAY):
+        a, b = line.split(" ")
+        total_score += calculate_score(
+            translation[ord(a) - ord("A")], translation[ord(b) - ord("X")]
+        )
+
+    return total_score
 
 
 def part_2() -> int:
     """
-    Total calories carried by the three elves with the most calories
+    Solve part 2
     """
-    return 0
+    move_translation = ["rock", "paper", "scissors"]
+    outcome_translation = [-1, 0, 1]
+
+    total_score = 0
+    for line in get_daily_input(DAY):
+        a, b = line.split(" ")
+        a_move = ord(a) - ord("A")
+        b_move = a_move + outcome_translation[ord(b) - ord("X")]
+        if b_move > 2:
+            b_move = 0
+
+        total_score += calculate_score(
+            move_translation[a_move], move_translation[b_move]
+        )
+
+    return total_score
 
 
 def main():
