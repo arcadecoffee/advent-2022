@@ -22,7 +22,7 @@ def download_daily_input(day: int = 1, session_id: str = None) -> None:
     Yield lines from the day's input set
     """
     if not session_id:
-        with open(_SESSSION_FILENAME, mode="rt") as dot_aocsession:
+        with open(_SESSION_FILENAME, mode="rt") as dot_aocsession:
             session_id = dot_aocsession.readline().strip()
 
     with urlopen(Request(
