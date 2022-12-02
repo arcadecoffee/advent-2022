@@ -3,6 +3,8 @@ Advent of Code 2022 Day 1
 """
 from advent_tools import get_daily_input
 
+DAY = 1
+
 
 def sum_n_most_calories(number_of_elves: int = 1):
     """
@@ -10,7 +12,7 @@ def sum_n_most_calories(number_of_elves: int = 1):
     """
     elves = [0] * number_of_elves
     current_elf = 0
-    for line in get_daily_input(1):
+    for line in get_daily_input(DAY):
         if line == "":
             elves.sort()
             if current_elf > elves[0]:
