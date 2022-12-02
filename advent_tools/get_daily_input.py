@@ -9,7 +9,7 @@ from urllib.request import Request, urlopen
 
 
 _URL_TEMPLATE = "https://adventofcode.com/2022/day/{day}/input"
-_SESSSION_FILENAME = ".aocsession"
+_SESSION_FILENAME = ".aocsession"
 _CACHE_DIRECTORY = ".aoccache"
 
 
