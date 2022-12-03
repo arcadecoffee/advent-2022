@@ -1,5 +1,5 @@
 """
-Advent of Code 2022 Day 1
+Advent of Code 2022 Day 2
 """
 from advent_tools import get_daily_input
 
