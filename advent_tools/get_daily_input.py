@@ -9,7 +9,7 @@ from urllib.request import Request, urlopen
 
 
 _URL_TEMPLATE = "https://adventofcode.com/2022/day/{day}/input"
-_SESSSION_FILENAME = ".aocsession"
+_SESSION_FILENAME = ".aocsession"
 _CACHE_DIRECTORY = ".aoccache"
 
 
@@ -22,7 +22,7 @@ def download_daily_input(day: int = 1, session_id: str = None) -> None:
     Yield lines from the day's input set
     """
     if not session_id:
-        with open(_SESSSION_FILENAME, mode="rt") as dot_aocsession:
+        with open(_SESSION_FILENAME, mode="rt") as dot_aocsession:
             session_id = dot_aocsession.readline().strip()
 
     with urlopen(Request(
