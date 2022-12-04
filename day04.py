@@ -25,30 +25,26 @@ if DEBUG:
             yield line.strip()
 
 
-def part_1() -> int:
-    """
-    Solve part 1
-    """
-    total = 0
+def count_overlaps() -> [int, int]:
+    full_overlaps = 0
+    partial_overlaps = 0
     for line in get_daily_input(DAY):
-        sections = [int(i) for i in  re.split(r"[,-]", line)]
-        if (sections[0] <= sections[2] and sections[1] >= sections[3]) or \
-                (sections[0] >= sections[2] and sections[1] <= sections[3]):
-            total += 1
-    return total
-
-
-def part_2() -> int:
-    """
-    Solve part 2
-    """
-    total = 0
-    return total
+        a_start, a_end, b_start, b_end = [int(i) for i in re.split(r"[,-]", line)]
+        a_starts_in_b = b_start <= a_start <= b_end
+        a_ends_in_b = b_start <= a_end <= b_end
+        b_starts_in_a = a_start <= b_start <= a_end
+        b_ends_in_a = a_start <= b_end <= a_end
+        if a_starts_in_b or a_ends_in_b or b_starts_in_a or b_ends_in_a:
+            partial_overlaps += 1
+            if (a_starts_in_b and a_ends_in_b) or (b_starts_in_a and b_ends_in_a):
+                full_overlaps += 1
+    return full_overlaps, partial_overlaps
 
 
 def main():
-    print(f"Part 1: {part_1()}")
-    print(f"Part 2: {part_2()}")
+    full_overlaps, partial_overlaps = count_overlaps()
+    print(f"Part 1: {full_overlaps}")
+    print(f"Part 2: {partial_overlaps}")
 
 
 if __name__ == "__main__":
