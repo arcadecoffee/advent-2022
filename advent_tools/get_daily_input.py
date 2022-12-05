@@ -41,4 +41,4 @@ def get_daily_input(day: int = 1, session_id: str = None, force_download=False) 
         download_daily_input(day, session_id)
     with open(_cache_filename(day), mode="rt") as infile:
         for line in infile:
-            yield line.strip()
+            yield line.strip("\n")
