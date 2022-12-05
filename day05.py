@@ -55,15 +55,24 @@ def process_instructions(stacks: dict, instructions: list) -> dict:
     return stacks
 
 
+def process_instructions_v2(stacks: dict, instructions: list) -> dict:
+    stacks = copy.deepcopy(stacks)
+    for num, source, destination in instructions:
+        stacks[destination] += stacks[source][-1 * num:]
+        del stacks[source][-1 * num:]
+    return stacks
+
+
 def part_1() -> str:
     start_stack, instructions = process_input()
     end_stack = process_instructions(start_stack, instructions)
     return "".join([end_stack[i][-1] for i in sorted(end_stack.keys())])
 
 
-def part_2() -> int:
-    data = get_daily_input(DAY)
-    return 0
+def part_2() -> str:
+    start_stack, instructions = process_input()
+    end_stack = process_instructions_v2(start_stack, instructions)
+    return "".join([end_stack[i][-1] for i in sorted(end_stack.keys())])
 
 
 def main():
