@@ -10,6 +10,11 @@ DAY = 6
 DEBUG = sys.argv[1] == "debug" if len(sys.argv) > 1 else False
 
 DEBUG_DATA = """
+mjqjpqmgbljsphdztnvjfqwrcgsmlb
+bvwbjplbgvbhsrlpgdmjqwftvncz
+nppdvjthqldpwncqszvftbrmjlhg
+nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg
+zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw
 """
 
 if DEBUG:
@@ -18,9 +23,15 @@ if DEBUG:
             yield line.strip()
 
 
-def part_1() -> int:
+def part_1() -> str:
+    result = []
     data = get_daily_input(DAY)
-    return 0
+    for line in data:
+        for i in range(len(line) - 3):
+            if len(set(line[i:i + 4])) == 4:
+                result.append(str(i + 4))
+                break
+    return ", ".join(result)
 
 
 def part_2() -> int:
