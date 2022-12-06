@@ -23,20 +23,23 @@ if DEBUG:
             yield line.strip()
 
 
-def part_1() -> str:
+def find_signal(marker_length: int) -> list[int]:
     result = []
-    data = get_daily_input(DAY)
-    for line in data:
-        for i in range(len(line) - 3):
-            if len(set(line[i:i + 4])) == 4:
-                result.append(str(i + 4))
+    for data in get_daily_input(DAY):
+        for i in range(len(data) - (marker_length - 1)):
+            if len(set(data[i:i + marker_length])) == marker_length:
+                result.append(i + marker_length)
                 break
-    return ", ".join(result)
+    return result
 
 
-def part_2() -> int:
-    data = get_daily_input(DAY)
-    return 0
+def part_1() -> str:
+    return ", ".join([str(i) for i in find_signal(4)])
+
+
+def part_2() -> str:
+    return ", ".join([str(i) for i in find_signal(14)])
+
 
 def main():
     print(f"Part 1: {part_1()}")
