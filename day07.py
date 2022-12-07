@@ -48,16 +48,16 @@ def get_dir_sizes() -> dict[str, int]:
     for line in get_daily_input(DAY):
         if line == "$ ls":
             continue
+        elif line == "$ cd /":
+            pwd = "/"
         elif line == "$ cd ..":
             pwd = "/".join(pwd.split("/")[:-2]) + "/"
         elif line.startswith("$ cd"):
-            pwd = "/" if line == "$ cd /" else pwd + line.split(" ")[-1] + "/"
+            pwd += line.split(" ")[-1] + "/"
         elif line.startswith("dir "):
-            dirname = line.split(" ")[-1]
-            dirs[pwd + dirname + "/"] = 0
+            dirs[pwd + line.split(" ")[-1] + "/"] = 0
         else:
-            size = line.split(" ")[0]
-            dirs[pwd] += int(size)
+            dirs[pwd] += int(line.split(" ")[0])
 
     return {k: sum([dirs[l] for l in dirs if l.startswith(k)]) for k in dirs}
 
