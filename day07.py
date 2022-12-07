@@ -41,7 +41,7 @@ if DEBUG:
             yield line.strip("\n")
 
 
-def part_1() -> int:
+def get_dir_sizes() -> dict[str, int]:
     pwd: str = ""
     dirs: dict[str, int] = {"/": 0}
 
@@ -59,14 +59,21 @@ def part_1() -> int:
             size = line.split(" ")[0]
             dirs[pwd] += int(size)
 
-    dir_sizes = {k: sum([dirs[l] for l in dirs if l.startswith(k)]) for k in dirs}
+    return {k: sum([dirs[l] for l in dirs if l.startswith(k)]) for k in dirs}
 
+
+def part_1() -> int:
+    dir_sizes = get_dir_sizes()
     return sum([dir_sizes[d] for d in dir_sizes if dir_sizes[d] <= 100000])
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return 0
+    dir_sizes = get_dir_sizes()
+    disk_size = 70000000
+    space_required = 30000000
+    space_available = disk_size - dir_sizes["/"]
+    space_needed = space_required - space_available
+    return min([dir_sizes[d] for d in dir_sizes if dir_sizes[d] >= space_needed])
 
 
 def main():
