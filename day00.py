@@ -15,7 +15,7 @@ DEBUG_DATA = """
 if DEBUG:
     def get_daily_input(x):
         for line in DEBUG_DATA.strip().split("\n"):
-            yield line.strip()
+            yield line.strip("\n")
 
 
 def part_1() -> int:
