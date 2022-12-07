@@ -69,10 +69,8 @@ def part_1() -> int:
 
 def part_2() -> int:
     dir_sizes = get_dir_sizes()
-    disk_size = 70000000
-    space_required = 30000000
-    space_available = disk_size - dir_sizes["/"]
-    space_needed = space_required - space_available
+    space_available = 70000000 - dir_sizes["/"]
+    space_needed = 30000000 - space_available
     return min([dir_sizes[d] for d in dir_sizes if dir_sizes[d] >= space_needed])
 
 
