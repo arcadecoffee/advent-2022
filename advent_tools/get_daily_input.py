@@ -7,7 +7,6 @@ from os.path import exists
 from typing import Iterable
 from urllib.request import Request, urlopen
 
-
 _URL_TEMPLATE = "https://adventofcode.com/2022/day/{day}/input"
 _SESSION_FILENAME = ".aocsession"
 _CACHE_DIRECTORY = ".aoccache"
@@ -29,7 +28,7 @@ def download_daily_input(day: int = 1, session_id: str = None) -> None:
     with urlopen(Request(
             url=_URL_TEMPLATE.format(day=day),
             headers={"Cookie": f"session={session_id}", "User-Agent": useragent}
-        )) as response:
+    )) as response:
         if response.status == 200:
             makedirs(_CACHE_DIRECTORY, exist_ok=True)
             with open(_cache_filename(day), mode="wt") as outfile:
@@ -37,7 +36,11 @@ def download_daily_input(day: int = 1, session_id: str = None) -> None:
                     outfile.write(line.decode())
 
 
-def get_daily_input(day: int = 1, session_id: str = None, force_download=False) -> Iterable[str]:
+def get_daily_input(
+        day: int = 1,
+        session_id: str = None,
+        force_download: bool = False
+) -> Iterable[str]:
     if force_download or not exists(_cache_filename(day)):
         download_daily_input(day, session_id)
     with open(_cache_filename(day), mode="rt") as infile:
