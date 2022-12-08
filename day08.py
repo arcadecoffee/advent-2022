@@ -1,7 +1,6 @@
 """
 Advent of Code 2022 Day 8
 """
-from collections import namedtuple
 import sys
 
 from advent_tools import get_daily_input
