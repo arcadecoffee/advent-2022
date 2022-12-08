@@ -23,11 +23,12 @@ def download_daily_input(day: int = 1, session_id: str = None) -> None:
     """
     if not session_id:
         with open(_SESSION_FILENAME, mode="rt") as dot_aocsession:
+            useragent = dot_aocsession.readline().strip()
             session_id = dot_aocsession.readline().strip()
 
     with urlopen(Request(
             url=_URL_TEMPLATE.format(day=day),
-            headers={"Cookie": f"session={session_id}"}
+            headers={"Cookie": f"session={session_id}", "User-Agent": useragent}
         )) as response:
         if response.status == 200:
             makedirs(_CACHE_DIRECTORY, exist_ok=True)
