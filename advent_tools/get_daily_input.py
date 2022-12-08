@@ -1,5 +1,5 @@
 """
-Tools and utilities for use with the Advent of Code
+Fetch, cache, and access your input data from Advent of Code
 https://adventofcode.com
 """
 from os import makedirs
