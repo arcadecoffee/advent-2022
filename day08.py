@@ -33,26 +33,22 @@ def load_forest() -> list[list[int]]:
 
 
 def get_visibility(forest: list[list[int]]) -> list[list[bool]]:
-    visibility = []
-    for row in range(len(forest)):
-        visibility.append([False] * len(forest[row]))
-        for col in range(len(forest[row])):
-            if row in (0, len(forest) - 1) or col in (0, len(forest[row]) - 1):
-                visibility[row][col] = True
-            else:
-                north = max([c[col] for c in forest[:row]])
-                south = max([c[col] for c in forest[row + 1:]])
-                east = max([c for c in forest[row][col + 1:]])
-                west = max([c for c in forest[row][:col]])
-                visibility[row][col] = min(north, south, east, west) < forest[row][col]
+    visibility = [[True] * len(forest[0])]
+    for row in range(1, len(forest) - 1):
+        visibility.append([True] + [False] * (len(forest[row]) - 2) + [True])
+        for col in range(1, len(forest[row]) - 1):
+            visibility[row][col] = \
+                max([c[col] for c in forest[:row]]) < forest[row][col] or \
+                max([c[col] for c in forest[row + 1:]]) < forest[row][col] or \
+                max([c for c in forest[row][col + 1:]]) < forest[row][col] or \
+                max([c for c in forest[row][:col]]) < forest[row][col]
+    visibility.append([True] * len(forest[0]))
     return visibility
 
 
 def part_1() -> int:
-    total = 0
-    for f in get_visibility(load_forest()):
-        total += sum(f)
-    return total
+    visibility = get_visibility(load_forest())
+    return sum(sum(v) for v in visibility)
 
 
 def part_2() -> int:
