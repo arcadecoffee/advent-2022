@@ -32,18 +32,57 @@ def load_forest() -> list[list[int]]:
     return forest
 
 
+def north(forest: list[list[int]], row: int, col: int) -> list[int]:
+    return [c[col] for c in reversed(forest[:row])]
+
+
+def south(forest: list[list[int]], row: int, col: int) -> list[int]:
+    return [c[col] for c in forest[row + 1:]]
+
+
+def east(forest: list[list[int]], row: int, col: int) -> list[int]:
+    return [c for c in forest[row][col + 1:]]
+
+
+def west(forest: list[list[int]], row: int, col: int) -> list[int]:
+    return [c for c in reversed(forest[row][:col])]
+
+
 def get_visibility(forest: list[list[int]]) -> list[list[bool]]:
     visibility = [[True] * len(forest[0])]
     for row in range(1, len(forest) - 1):
         visibility.append([True] + [False] * (len(forest[row]) - 2) + [True])
         for col in range(1, len(forest[row]) - 1):
             visibility[row][col] = \
-                max([c[col] for c in forest[:row]]) < forest[row][col] or \
-                max([c[col] for c in forest[row + 1:]]) < forest[row][col] or \
-                max([c for c in forest[row][col + 1:]]) < forest[row][col] or \
-                max([c for c in forest[row][:col]]) < forest[row][col]
-    visibility.append([True] * len(forest[0]))
+                max(north(forest, row, col)) < forest[row][col] or \
+                max(south(forest, row, col)) < forest[row][col] or \
+                max(east(forest, row, col)) < forest[row][col] or \
+                max(west(forest, row, col)) < forest[row][col]
+    visibility.append([True] * len(forest[-1]))
     return visibility
+
+
+def count_visible(trees: list[int], height: int) -> int:
+    count = 0
+    for tree in trees:
+        count += 1
+        if tree >= height:
+            break
+    return count
+
+
+def get_scores(forest: list[list[int]]) -> list[list[int]]:
+    scores = [[0] * len(forest[0])]
+    for row in range(1, len(forest) - 1):
+        scores.append([0] * len(forest[row]))
+        for col in range(1, len(forest[row]) - 1):
+            scores[row][col] = \
+                count_visible(north(forest, row, col), forest[row][col]) * \
+                count_visible(south(forest, row, col), forest[row][col]) * \
+                count_visible(east(forest, row, col), forest[row][col]) * \
+                count_visible(west(forest, row, col), forest[row][col])
+    scores.append([0] * len(forest[-1]))
+    return scores
 
 
 def part_1() -> int:
@@ -52,8 +91,9 @@ def part_1() -> int:
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return 0
+    forest = load_forest()
+    scores = get_scores(forest)
+    return max(max(s) for s in scores)
 
 def main():
     print(f"Part 1: {part_1()}")
