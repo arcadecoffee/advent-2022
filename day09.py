@@ -96,7 +96,6 @@ def part_2() -> int:
         d, n = row.split(" ")
         for _ in range(int(n)):
             rope.move_head(DIRECTIONS[d])
-        pass
 
     return len(set(rope.knot_paths[-1]))
 
