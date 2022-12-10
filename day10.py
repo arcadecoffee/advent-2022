@@ -171,32 +171,40 @@ if DEBUG:
 
 
 class CPU:
-    registers: dict[str, int] = {"x": 1}
-    history: list[dict[str, int]] = [registers.copy()]
+    register: int = 1
+    history: list[int] = [register]
 
     def tick(self, num: int = 1):
         for _ in range(num):
-            self.history.append(self.registers.copy())
+            self.history.append(self.register)
 
     def process_instruction(self, instruction: str):
         if instruction == "noop":
             self.tick(1)
         elif instruction.startswith("add"):
             self.tick(2)
-            operation, argument = instruction.split(" ")
-            self.registers[operation[-1]] += int(argument)
+            self.register += int(instruction.split(" ")[-1])
 
 
 def part_1() -> int:
     cpu = CPU()
     for instruction in get_daily_input(DAY):
         cpu.process_instruction(instruction)
-    return sum([(cpu.history[n]["x"] * n) for n in [20, 60, 100, 140, 180, 220]])
+    interesting_cycles = [20, 60, 100, 140, 180, 220]
+    return sum([(cpu.history[n] * n) for n in interesting_cycles])
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    cpu = CPU()
+    for instruction in get_daily_input(DAY):
+        cpu.process_instruction(instruction)
+
+    for v in range(6):
+        for h in range(40):
+            val = "#" if abs(cpu.history[h + 1 + 40 * v] - h) <= 1 else " "
+            print(val, end="")
+        print()
+    return 0
 
 
 def main():
