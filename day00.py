@@ -13,19 +13,20 @@ DEBUG_DATA = """
 """
 
 if DEBUG:
-    def get_daily_input(x):
+    def get_daily_input(_):
         for line in DEBUG_DATA.strip().split("\n"):
             yield line.strip("\n")
 
 
 def part_1() -> int:
     data = get_daily_input(DAY)
-    return 0
+    return len(list(data))
 
 
 def part_2() -> int:
     data = get_daily_input(DAY)
-    return 0
+    return len(list(data))
+
 
 def main():
     print(f"Part 1: {part_1()}")
