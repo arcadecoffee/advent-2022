@@ -186,30 +186,27 @@ class CPU:
             self.register += int(instruction.split(" ")[-1])
 
 
-def part_1() -> int:
-    cpu = CPU()
-    for instruction in get_daily_input(DAY):
-        cpu.process_instruction(instruction)
+def part_1(cpu: CPU) -> int:
     interesting_cycles = [20, 60, 100, 140, 180, 220]
     return sum([(cpu.history[n] * n) for n in interesting_cycles])
 
 
-def part_2() -> int:
+def part_2(cpu: CPU) -> str:
+    crt: str = "\n"
+    for v in range(6):
+        for h in range(40):
+            crt += "#" if abs(cpu.history[h + 1 + 40 * v] - h) <= 1 else "."
+        crt += "\n"
+    return crt
+
+
+def main():
     cpu = CPU()
     for instruction in get_daily_input(DAY):
         cpu.process_instruction(instruction)
 
-    for v in range(6):
-        for h in range(40):
-            val = "#" if abs(cpu.history[h + 1 + 40 * v] - h) <= 1 else " "
-            print(val, end="")
-        print()
-    return 0
-
-
-def main():
-    print(f"Part 1: {part_1()}")
-    print(f"Part 2: {part_2()}")
+    print(f"Part 1: {part_1(cpu)}")
+    print(f"Part 2: {part_2(cpu)}")
 
 
 if __name__ == "__main__":
