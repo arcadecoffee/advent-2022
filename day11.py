@@ -61,10 +61,12 @@ class Monkey:
     def __post_init__(self):
         self.operation_func = lambda old: eval(self.operation)
 
-    def process_items(self):
+    def process_items(self, worry_level_divisor: int = 1, mod_factor: int = 0):
         for item in self.items:
             item = self.operation_func(item)
-            item = int(item / 3)
+            item = int(item / worry_level_divisor)
+            if mod_factor:
+                item = item % mod_factor
             if item % self.test_divisible == 0:
                 self.all_monkeys[self.if_true].items.append(item)
             else:
@@ -109,14 +111,24 @@ def part_1() -> int:
     
     for _ in range(20):
         for monkey in monkeys:
-            monkey.process_items()
+            monkey.process_items(worry_level_divisor=3)
+
     return prod(sorted([m.inspected_count for m in monkeys], reverse=True)[0:2])
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    monkeys = load_monkeys()
 
+    mod_factor = prod([m.test_divisible for m in monkeys])
+
+    for _ in range(10000):
+        for monkey in monkeys:
+            monkey.process_items(mod_factor=mod_factor)
+
+    return prod(sorted([m.inspected_count for m in monkeys], reverse=True)[0:2])
+
+
+    return 0
 
 def main():
     print(f"Part 1: {part_1()}")
