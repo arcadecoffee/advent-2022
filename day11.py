@@ -120,15 +120,12 @@ def part_2() -> int:
     monkeys = load_monkeys()
 
     mod_factor = prod([m.test_divisible for m in monkeys])
-
     for _ in range(10000):
         for monkey in monkeys:
             monkey.process_items(mod_factor=mod_factor)
 
     return prod(sorted([m.inspected_count for m in monkeys], reverse=True)[0:2])
 
-
-    return 0
 
 def main():
     print(f"Part 1: {part_1()}")
