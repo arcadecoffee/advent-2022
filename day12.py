@@ -50,8 +50,7 @@ class HeightMap:
     end: Coordinate = None
     points: list[list[MapPoint]] = field(default_factory=list)
 
-    def reachable_points(self, origin: Coordinate) \
-            -> Iterable[tuple[int, int]]:
+    def reachable_points(self, origin: Coordinate) -> Iterable[Coordinate]:
 
         possible_moves = [
             Coordinate(x, y) for (x, y) in [
@@ -68,9 +67,12 @@ class HeightMap:
     def point_at(self, coordinate: Coordinate):
         return self.points[coordinate.y][coordinate.x]
 
-    def walk(self) -> None:
-        queue = [(0, self.start, self.start)]
+    def walk(self, queue: list[tuple[int, Coordinate, Coordinate]] = None) -> None:
+        if not queue:
+            queue = [(0, self.start, self.start)]
+        cycles = 0
         while queue:
+            cycles += 1
             curr_cost, curr_point, prev_point = queue.pop(0)
             if not self.point_at(curr_point).visited:
                 self.point_at(curr_point).cost_to_reach = curr_cost
@@ -79,9 +81,11 @@ class HeightMap:
                 if curr_point == self.end:
                     break
                 else:
+                    curr_cost += 1
                     for next_point in self.reachable_points(curr_point):
-                        queue.append((curr_cost + 1, next_point, curr_point))
+                        queue.append((curr_cost, next_point, curr_point))
                     queue.sort(key=lambda l: l[0])
+        print(f"Completed in {cycles} cycles")
 
 
 def load_map() -> HeightMap:
@@ -102,8 +106,6 @@ def load_map() -> HeightMap:
                 )
                 point = "z"
             height_map.points[-1].append(MapPoint(height=ord(point) - ord("a")))
-    # height_map.point_at(height_map.start).cost_to_reach = 0
-    # height_map.point_at(height_map.start).visited = True
     return height_map
 
 
@@ -114,8 +116,14 @@ def part_1() -> int:
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    m = load_map()
+    queue = []
+    for (x, y) in product(range(len(m.points[0])), range(len(m.points))):
+        coord = Coordinate(x, y)
+        if m.point_at(coord).height == 0:
+            queue.append((0, coord, coord))
+    m.walk(queue=queue)
+    return m.point_at(m.end).cost_to_reach
 
 
 def main():
