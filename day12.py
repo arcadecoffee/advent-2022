@@ -32,9 +32,6 @@ class Coordinate:
     x: int
     y: int
 
-    def distance_to(self, other: "Coordinate") -> int:
-        return abs(self.x - other.x) + abs(self.y - other.y)
-
 
 @dataclass
 class MapPoint:
@@ -70,9 +67,7 @@ class HeightMap:
     def walk(self, queue: list[tuple[int, Coordinate, Coordinate]] = None) -> None:
         if not queue:
             queue = [(0, self.start, self.start)]
-        cycles = 0
         while queue:
-            cycles += 1
             curr_cost, curr_point, prev_point = queue.pop(0)
             if not self.point_at(curr_point).visited:
                 self.point_at(curr_point).cost_to_reach = curr_cost
@@ -85,7 +80,6 @@ class HeightMap:
                     for next_point in self.reachable_points(curr_point):
                         queue.append((curr_cost, next_point, curr_point))
                     queue.sort(key=lambda l: l[0])
-        print(f"Completed in {cycles} cycles")
 
 
 def load_map() -> HeightMap:
