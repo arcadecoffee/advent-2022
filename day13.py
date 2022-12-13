@@ -3,6 +3,9 @@ Advent of Code 2022 Day 13
 """
 import sys
 
+from functools import cmp_to_key
+from math import prod
+
 from advent_tools import get_daily_input
 
 DAY = 13
@@ -42,16 +45,25 @@ if DEBUG:
 
 
 def compare(left: list, right: list) -> int:
+    if left == right:
+        return 0
+    elif not left:
+        return -1
     for i in range(len(left)):
         if i >= len(right):
-            return False
+            return 1
         if left[i] != right[i]:
             if type(left[i]) == int and type(right[i]) == int:
-                return left[i] < right[i]
+                if left[i] < right[i]:
+                    return -1
+                elif left[i] > right[i]:
+                    return 1
             else:
-                return compare(left[i] if type(left[i]) == list else [left[i]],
-                               right[i] if type(right[i]) == list else [right[i]])
-    return True
+                cmp = compare(left[i] if type(left[i]) == list else [left[i]],
+                              right[i] if type(right[i]) == list else [right[i]])
+                if cmp != 0:
+                    return cmp
+    return -1
 
 
 def part_1() -> int:
@@ -63,19 +75,21 @@ def part_1() -> int:
 
     sum_of_indicies = 0
     for i in range(len(pairs)):
-        sum_of_indicies += compare(pairs[i]["left"], pairs[i]["right"]) * (i + 1)
+        sum_of_indicies += (compare(pairs[i]["left"], pairs[i]["right"]) < 1) * (i + 1)
 
     return sum_of_indicies
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    targets = [[[2]], [[6]]]
+    data = targets.copy() + [eval(row) for row in get_daily_input(DAY) if row]
+    data.sort(key=cmp_to_key(compare))
+    return prod([(data.index(t) + 1) for t in targets])
 
 
 def main():
     print(f"Part 1: {part_1()}")
-    # print(f"Part 2: {part_2()}")
+    print(f"Part 2: {part_2()}")
 
 
 if __name__ == "__main__":
