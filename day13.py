@@ -45,18 +45,12 @@ def compare(left: list, right: list) -> int:
     for i in range(len(left)):
         if i >= len(right):
             return False
-        l_val = left[i]
-        r_val = right[i]
-        if type(l_val) == int and type(r_val) == int:
-            if l_val != r_val:
-                return l_val < r_val
-        else:
-            l_val = l_val if type(l_val) == list else [l_val]
-            r_val = r_val if type(r_val) == list else [r_val]
-            compare_left = compare(l_val, r_val)
-            compare_right = compare(r_val, l_val)
-            if compare_left != compare_right:
-                return compare_left
+        if left[i] != right[i]:
+            if type(left[i]) == int and type(right[i]) == int:
+                return left[i] < right[i]
+            else:
+                return compare(left[i] if type(left[i]) == list else [left[i]],
+                               right[i] if type(right[i]) == list else [right[i]])
     return True
 
 
