@@ -63,9 +63,7 @@ def part_1() -> int:
 
     sum_of_indicies = 0
     for i in range(len(pairs)):
-        vals = pairs[i]
-        vals["valid"] = compare(vals["left"], vals["right"])
-        sum_of_indicies += abs(vals["valid"] * (i + 1))
+        sum_of_indicies += compare(pairs[i]["left"], pairs[i]["right"]) * (i + 1)
 
     return sum_of_indicies
 
