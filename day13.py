@@ -80,7 +80,7 @@ def part_2() -> int:
     targets = [[[2]], [[6]]]
     data = targets.copy() + [json.loads(row) for row in get_daily_input(DAY) if row]
     data.sort(key=cmp_to_key(compare))
-
+    
     return prod([(data.index(t) + 1) for t in targets])
 
 
