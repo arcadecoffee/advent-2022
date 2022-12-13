@@ -1,6 +1,7 @@
 """
 Advent of Code 2022 Day 13
 """
+import json
 import sys
 
 from functools import cmp_to_key
@@ -67,23 +68,19 @@ def compare(left: list, right: list) -> int:
 
 
 def part_1() -> int:
-    data = get_daily_input(DAY)
-    pairs: list[dict] = []
-    for left in data:
-        if left:
-            pairs.append({"left": eval(left), "right": eval(next(data))})
+    data = [json.loads(d) for d in get_daily_input(DAY) if d]
 
-    sum_of_indicies = 0
-    for i in range(len(pairs)):
-        sum_of_indicies += (compare(pairs[i]["left"], pairs[i]["right"]) < 1) * (i + 1)
-
-    return sum_of_indicies
+    sum_of_indexes = 0
+    for i in range(0, len(data), 2):
+        sum_of_indexes += int(1 + i / 2) if compare(data[i], data[i + 1]) < 1 else 0
+    return sum_of_indexes
 
 
 def part_2() -> int:
     targets = [[[2]], [[6]]]
-    data = targets.copy() + [eval(row) for row in get_daily_input(DAY) if row]
+    data = targets.copy() + [json.loads(row) for row in get_daily_input(DAY) if row]
     data.sort(key=cmp_to_key(compare))
+
     return prod([(data.index(t) + 1) for t in targets])
 
 
