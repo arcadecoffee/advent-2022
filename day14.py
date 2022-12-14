@@ -1,7 +1,6 @@
 """
 Advent of Code 2022 Day 14
 """
-import os
 import sys
 
 from dataclasses import dataclass, field
@@ -11,6 +10,7 @@ from advent_tools import get_daily_input
 DAY = 14
 
 DEBUG = sys.argv[1] == "debug" if len(sys.argv) > 1 else False
+VISUALIZE = sys.argv[1] == "visualize" if len(sys.argv) > 1 else False
 
 DEBUG_DATA = """
 498,4 -> 498,6 -> 496,6
@@ -48,12 +48,12 @@ class Line:
         return [tuple(self.points[i:i + 2]) for i in range(self.num_points - 1)]
 
     def set_origin(self, top_left_corner: Coordinate) -> "Line":
-        return Line(points = [p - top_left_corner for p in self.points])
+        return Line([p - top_left_corner for p in self.points])
 
     @classmethod
-    def line_from_text(cls, input: str) -> "Line":
+    def line_from_text(cls, text: str) -> "Line":
         line = Line()
-        for point in input.split(" -> "):
+        for point in text.split(" -> "):
             x, y = [int(n) for n in point.split(",")]
             line.points.append(Coordinate(x, y))
         return line
@@ -108,21 +108,30 @@ class CaveMap:
                 return True
         return False
 
-
-def simulate_sand_falling(lines, visualize: bool = False):
-    cave_map = CaveMap(lines=lines, sand_origin=Coordinate(500, 0))
-    grains = 0
-    while cave_map.at(cave_map.sand_origin) == "." and cave_map.drop_sand():
-        if visualize:
-            os.system("clear")
-            print(cave_map)
-        grains += 1
-    return grains
+    def fill_cave(self) -> int:
+        count = 1
+        self.map[self.sand_origin.y][self.sand_origin.x] = "o"
+        for y in range(self.height - 1):
+            for x in range(self.width):
+                if self.map[y][x] == "o":
+                    for x_next in [x - 1, x, x + 1]:
+                        if self.map[y + 1][x_next] == ".":
+                            self.map[y + 1][x_next] = "o"
+                            count += 1
+        return count
 
 
 def part_1() -> int:
     lines = [Line.line_from_text(i) for i in get_daily_input(DAY)]
-    return simulate_sand_falling(lines, DEBUG)
+    cave_map = CaveMap(lines=lines, sand_origin=Coordinate(500, 0))
+    grains = 0
+    while cave_map.at(cave_map.sand_origin) == "." and cave_map.drop_sand():
+        grains += 1
+
+    if DEBUG or VISUALIZE:
+        print("\n", cave_map)
+
+    return grains
 
 
 def part_2() -> int:
@@ -130,13 +139,17 @@ def part_2() -> int:
     largest_y = max([p.y for i in lines for p in i.points]) + 2
     lines.append(Line([Coordinate(500 - largest_y, largest_y),
                        Coordinate(500 + largest_y, largest_y)]))
-    return simulate_sand_falling(lines, DEBUG)
+    cave_map = CaveMap(lines=lines, sand_origin=Coordinate(500, 0))
+    grains = cave_map.fill_cave()
+
+    if DEBUG or VISUALIZE:
+        print("\n", cave_map)
+
+    return grains
 
 
 def main():
     print(f"Part 1: {part_1()}")
-    if DEBUG:
-        input("Press Enter to continue to Part 2")
     print(f"Part 2: {part_2()}")
 
 
