@@ -121,8 +121,24 @@ def part_1() -> int:
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    lines = [Line.line_from_text(i) for i in get_daily_input(DAY)]
+    largest_y = max([p.y for i in lines for p in i.points]) + 2
+    lines.append(Line([Coordinate(500 - largest_y, largest_y),
+                       Coordinate(500 + largest_y, largest_y)]))
+
+    top_left_corner = Coordinate(min([p.x for i in lines for p in i.points]), 0)
+    sand_origin = Coordinate(500, 0) - top_left_corner
+    lines = [i.set_origin(top_left_corner) for i in lines]
+    cave_map = CaveMap(width=max([p.x for i in lines for p in i.points]) + 1,
+                       height=max([p.y for i in lines for p in i.points]) + 1,
+                       lines=lines)
+
+    grains = 0
+    while cave_map.at(sand_origin) == ".":
+        cave_map.drop_sand(sand_origin)
+#        print(cave_map)
+        grains += 1
+    return grains
 
 
 def main():
