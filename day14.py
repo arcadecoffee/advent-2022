@@ -60,12 +60,19 @@ class Line:
 
 
 class CaveMap:
-    def __init__(self, width: int, height: int, lines: list[Line]) -> None:
-        self.map: list[list[str]] = []
-        for _ in range(height):
-            self.map.append(["."] * width)
+    def __init__(self, lines: list[Line], sand_origin: Coordinate) -> None:
+        top_left_corner = Coordinate(min([p.x for i in lines for p in i.points]), 0)
+        adjusted_lines = [i.set_origin(top_left_corner) for i in lines]
 
-        for line in lines:
+        self.sand_origin = sand_origin - top_left_corner
+        self.width = max([p.x for i in adjusted_lines for p in i.points]) + 1
+        self.height = max([p.y for i in adjusted_lines for p in i.points]) + 1
+        self.map: list[list[str]] = []
+
+        for _ in range(self.height):
+            self.map.append(["."] * self.width)
+
+        for line in adjusted_lines:
             self.draw_line(line)
 
     def __repr__(self) -> str:
@@ -87,37 +94,35 @@ class CaveMap:
     def vacant(self, coordinate: Coordinate) -> bool:
         return self.at(coordinate) == "."
 
-    def drop_sand(self, location: Coordinate) -> Coordinate | None:
-        if location.y >= len(self.map) - 1:
-            return None
-        elif self.vacant(location + Coordinate(0, 1)):
-            return self.drop_sand(location + Coordinate(0, 1))
-        elif location.x == 0:
-            return None
-        elif self.vacant(location + Coordinate(-1, 1)):
-            return self.drop_sand(location + Coordinate(-1, 1))
-        elif location.x >= len(self.map[0]):
-            return None
-        elif self.vacant(location + Coordinate(1, 1)):
-            return self.drop_sand(location + Coordinate(1, 1))
-        else:
-            self.map[location.y][location.x] = "o"
-            return location
+    def drop_sand(self, location: Coordinate = None) -> bool:
+        location = location if location else self.sand_origin
+        if location.y < self.height - 1 and 0 < location.x < self.width:
+            if self.vacant(location + Coordinate(0, 1)):
+                return self.drop_sand(location + Coordinate(0, 1))
+            elif self.vacant(location + Coordinate(-1, 1)):
+                return self.drop_sand(location + Coordinate(-1, 1))
+            elif self.vacant(location + Coordinate(1, 1)):
+                return self.drop_sand(location + Coordinate(1, 1))
+            else:
+                self.map[location.y][location.x] = "o"
+                return True
+        return False
+
+
+def simulate_sand_falling(lines, visualize: bool = False):
+    cave_map = CaveMap(lines=lines, sand_origin=Coordinate(500, 0))
+    grains = 0
+    while cave_map.at(cave_map.sand_origin) == "." and cave_map.drop_sand():
+        if visualize:
+            os.system("clear")
+            print(cave_map)
+        grains += 1
+    return grains
 
 
 def part_1() -> int:
     lines = [Line.line_from_text(i) for i in get_daily_input(DAY)]
-    top_left_corner = Coordinate(min([p.x for i in lines for p in i.points]), 0)
-    sand_origin = Coordinate(500, 0) - top_left_corner
-    lines = [i.set_origin(top_left_corner) for i in lines]
-    cave_map = CaveMap(width=max([p.x for i in lines for p in i.points]) + 1,
-                       height=max([p.y for i in lines for p in i.points]) + 1,
-                       lines=lines)
-
-    grains = 0
-    while cave_map.drop_sand(sand_origin):
-        grains += 1
-    return grains
+    return simulate_sand_falling(lines, DEBUG)
 
 
 def part_2() -> int:
@@ -125,24 +130,13 @@ def part_2() -> int:
     largest_y = max([p.y for i in lines for p in i.points]) + 2
     lines.append(Line([Coordinate(500 - largest_y, largest_y),
                        Coordinate(500 + largest_y, largest_y)]))
-
-    top_left_corner = Coordinate(min([p.x for i in lines for p in i.points]), 0)
-    sand_origin = Coordinate(500, 0) - top_left_corner
-    lines = [i.set_origin(top_left_corner) for i in lines]
-    cave_map = CaveMap(width=max([p.x for i in lines for p in i.points]) + 1,
-                       height=max([p.y for i in lines for p in i.points]) + 1,
-                       lines=lines)
-
-    grains = 0
-    while cave_map.at(sand_origin) == ".":
-        cave_map.drop_sand(sand_origin)
-#        print(cave_map)
-        grains += 1
-    return grains
+    return simulate_sand_falling(lines, DEBUG)
 
 
 def main():
     print(f"Part 1: {part_1()}")
+    if DEBUG:
+        input("Press Enter to continue to Part 2")
     print(f"Part 2: {part_2()}")
 
 
