@@ -4,8 +4,6 @@ Advent of Code 2022 Day 15
 import re
 import sys
 
-from dataclasses import dataclass
-
 from advent_tools import get_daily_input
 
 DAY = 15
@@ -35,16 +33,19 @@ if TEST:
             yield line.strip("\n")
 
 
-@dataclass
 class Sensor:
-    sensor_x: int = 0
-    sensor_y: int = 0
-    beacon_x: int = 0
-    beacon_y: int = 0
-
-    @property
-    def range(self) -> int:
-        return abs(self.sensor_x - self.beacon_x) + abs(self.sensor_y - self.beacon_y)
+    def __init__(
+            self,
+            sensor_x: int = 0,
+            sensor_y: int = 0,
+            beacon_x: int = 0,
+            beacon_y: int = 0
+    ) -> None:
+        self.sensor_x = sensor_x
+        self.sensor_y = sensor_y
+        self.beacon_x = beacon_x
+        self.beacon_y = beacon_y
+        self.range = abs(sensor_x - beacon_x) + abs(sensor_y - beacon_y)
 
     def range_at_y(self, y: int) -> tuple[int, int] | None:
         if abs(self.sensor_y - y) <= self.range:
@@ -63,24 +64,13 @@ def load_input() -> list[Sensor]:
 
 
 def merge_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
-    ranges = ranges.copy()
-    go_again = True
-    while go_again:
-        go_again = False
-        curr_range = ranges.pop()
-        next_ranges = []
-        for curr_raw_range in ranges:
-            if curr_range[0] - 1 <= curr_raw_range[0] <= curr_range[1] + 1 or \
-                    curr_range[0] - 1 <= curr_raw_range[1] <= curr_range[1] + 1 or \
-                    curr_raw_range[0] - 1 <= curr_range[0] <= curr_raw_range[1] + 1 or \
-                    curr_raw_range[0] - 1 <= curr_range[1] <= curr_raw_range[1] + 1:
-                curr_range = (min([curr_range[0], curr_raw_range[0]]),
-                              max([curr_range[1], curr_raw_range[1]]))
-                go_again = True
-            else:
-                next_ranges.append(curr_raw_range)
-        ranges = [curr_range] + next_ranges
-    return ranges
+    merged = [sorted(ranges)[0]]
+    for start, end in sorted(ranges)[1:]:
+        if merged[-1][1] >= start - 1:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
 
 
 def part_1() -> int:
@@ -97,8 +87,8 @@ def part_2() -> int:
     for y in range(max_target + 1):
         x_ranges = merge_ranges([r for r in [s.range_at_y(y) for s in sensors] if r])
         if len(x_ranges) > 1:
-            for i in range(len(x_ranges) - 1):
-                return ((sorted(x_ranges)[i][1] + 1) * 4000000) + y
+            x = sorted(x_ranges)[0][1] + 1
+            return x * 4000000 + y
     return 0
 
 
