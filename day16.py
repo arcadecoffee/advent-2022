@@ -5,9 +5,9 @@ import sys
 
 from advent_tools import get_daily_input
 
-DAY = 161
+DAY = 16
 
-DEBUG = sys.argv[1] == "debug" if len(sys.argv) > 1 else False
+DEBUG = sys.argv[1] == "test" if len(sys.argv) > 1 else False
 
 DEBUG_DATA = """
 """
