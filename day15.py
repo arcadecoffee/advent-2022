@@ -69,11 +69,8 @@ def load_input() -> list[Sensor]:
     return sensors
 
 
-def part_1() -> int:
-    sensors = load_input()
-    target = 10 if TEST else 2000000
-    ranges = [r for r in [s.range_at_y(target) for s in sensors] if r]
-
+def merge_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    ranges = ranges.copy()
     go_again = True
     while go_again:
         go_again = False
@@ -89,14 +86,15 @@ def part_1() -> int:
                 next_ranges.append(curr_raw_range)
         next_ranges.append(curr_range)
         ranges = next_ranges
+    return ranges
 
-    print("\n".join([str(r) for r in ranges]))
 
-    total_width = 0
-    for r in ranges:
-        total_width += abs(r[0] - r[1])
-
-    return total_width
+def part_1() -> int:
+    sensors = load_input()
+    target = 10 if TEST else 2000000
+    ranges = [r for r in [s.range_at_y(target) for s in sensors] if r]
+    merged_ranges = merge_ranges(ranges)
+    return sum([abs(r[0] - r[1]) for r in merged_ranges])
 
 
 def part_2() -> int:
