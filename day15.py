@@ -60,6 +60,22 @@ class Sensor:
         else:
             return None
 
+    def point_excluded(self, x: int, y: int) -> bool:
+        distance = abs(self.sensor_x - x) + abs(self.sensor_y - y)
+        return distance <= self.range
+
+    def edge_points(self) -> list[tuple[int, int]]:
+        yield self.sensor_x, self.sensor_y + self.range + 1
+        yield self.sensor_x, self.sensor_y - self.range - 1
+        yield self.sensor_x + self.range + 1, self.sensor_y
+        yield self.sensor_x - self.range - 1, self.sensor_y
+        for i in range(1, self.range + 1):
+            width = self.range - i
+            yield self.sensor_x - width - 1, self.sensor_y + i
+            yield self.sensor_x + width + 1, self.sensor_y + i
+            yield self.sensor_x - width - 1, self.sensor_y - i
+            yield self.sensor_x + width + 1, self.sensor_y - i
+
 
 def load_input() -> list[Sensor]:
     sensors: [Sensor] = []
@@ -80,7 +96,7 @@ def merge_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
             if curr_range[0] - 1 <= curr_raw_range[0] <= curr_range[1] + 1 or \
                     curr_range[0] - 1 <= curr_raw_range[1] <= curr_range[1] + 1 or \
                     curr_raw_range[0] - 1 <= curr_range[0] <= curr_raw_range[1] + 1 or \
-                    curr_raw_range[0] - 1 <= curr_range[1] <= curr_raw_range[1]+ 1:
+                    curr_raw_range[0] - 1 <= curr_range[1] <= curr_raw_range[1] + 1:
                 curr_range = (min([curr_range[0], curr_raw_range[0]]),
                               max([curr_range[1], curr_raw_range[1]]))
                 go_again = True
@@ -96,6 +112,17 @@ def part_1() -> int:
     ranges = [r for r in [s.range_at_y(target) for s in sensors] if r]
     merged_ranges = merge_ranges(ranges)
     return sum([abs(r[0] - r[1]) for r in merged_ranges])
+
+
+def part_2_edge_scan() -> int:
+    sensors = load_input()
+    max_target = 20 if TEST else 4000000
+    for sensor in sensors:
+        for p in sensor.edge_points():
+            if 0 <= p[0] <= max_target and 0 <= p[1] <= max_target:
+                if True not in [s.point_excluded(*p) for s in sensors]:
+                    return p[0] * 4000000 + p[1]
+    return 0
 
 
 def part_2() -> int:
