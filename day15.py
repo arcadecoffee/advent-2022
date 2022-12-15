@@ -77,15 +77,16 @@ def merge_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
         curr_range = ranges.pop()
         next_ranges = []
         for curr_raw_range in ranges:
-            if curr_range[0] <= curr_raw_range[0] <= curr_range[1] or \
-                    curr_range[0] <= curr_raw_range[1] <= curr_range[1]:
+            if curr_range[0] - 1 <= curr_raw_range[0] <= curr_range[1] + 1 or \
+                    curr_range[0] - 1 <= curr_raw_range[1] <= curr_range[1] + 1 or \
+                    curr_raw_range[0] - 1 <= curr_range[0] <= curr_raw_range[1] + 1 or \
+                    curr_raw_range[0] - 1 <= curr_range[1] <= curr_raw_range[1]+ 1:
                 curr_range = (min([curr_range[0], curr_raw_range[0]]),
-                                     max([curr_range[1], curr_raw_range[1]]))
+                              max([curr_range[1], curr_raw_range[1]]))
                 go_again = True
             else:
                 next_ranges.append(curr_raw_range)
-        next_ranges.append(curr_range)
-        ranges = next_ranges
+        ranges = [curr_range] + next_ranges
     return ranges
 
 
@@ -98,8 +99,14 @@ def part_1() -> int:
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    sensors = load_input()
+    max_target = 20 if TEST else 4000000
+    for y in range(max_target + 1):
+        x_ranges = merge_ranges([r for r in [s.range_at_y(y) for s in sensors] if r])
+        if len(x_ranges) > 1:
+            for i in range(len(x_ranges) - 1):
+                return ((sorted(x_ranges)[i][1] + 1) * 4000000) + y
+    return 0
 
 
 def main():
