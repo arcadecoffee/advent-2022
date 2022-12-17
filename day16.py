@@ -24,7 +24,7 @@ Valve JJ has flow rate=21; tunnel leads to valve II
 """
 
 if DEBUG:
-    def get_daily_input(_):
+    def get_daily_input(_) -> list[str]:
         for line in DEBUG_DATA.strip().split("\n"):
             yield line.strip("\n")
 
@@ -36,7 +36,7 @@ class Valve:
         self.tunnels = tunnels
 
 
-def build_distance_matrix(valves):
+def build_distance_matrix(valves: dict[str, Valve]) -> dict[str, [dict[str, int]]]:
     matrix = {}
     for v in valves.values():
         matrix[v.name] = {v.name: 0}
@@ -52,15 +52,37 @@ def build_distance_matrix(valves):
                     if x not in matrix[v] or matrix[v][x] > new_distance:
                         matrix[v][x] = new_distance
                         keep_going = True
-    return matrix
+
+    return {
+        k: {
+            j: v for j, v in matrix[k].items() if valves[j].flow_rate and k != j
+        } for k in matrix
+    }
 
 
-def get_costs_to_close(distances, valves, open):
-    costs = {}
-    for v, d in distances.items():
-        if valves[v].flow_rate != 0 and v not in open:
-            costs[v] = sum([valves[v].flow_rate * (d + 1) for v in valves])
-    return costs
+def find_paths(valves: dict[str, Valve], start: str, time_limit: int) \
+        -> list[tuple[int, list[str]]]:
+    distances = build_distance_matrix(valves)
+    stack = [(time_limit, 0, [start])]
+    paths = []
+    while stack:
+        time, pressure, path = stack.pop()
+        curr_loc = path[-1]
+
+        next_locs = [
+            (valve, distance) for valve, distance in distances[curr_loc].items()
+            if distance <= time - 2 and valve not in path
+        ]
+
+        if next_locs:
+            for next_loc, dist in next_locs:
+                if dist <= time - 2 and next_loc not in path:
+                    next_time = time - dist - 1
+                    next_pressure = pressure + valves[next_loc].flow_rate * next_time
+                    stack.append((next_time, next_pressure, path + [next_loc]))
+        else:
+            paths.append((pressure, path[1:]))
+    return paths
 
 
 def part_1() -> int:
@@ -68,41 +90,26 @@ def part_1() -> int:
     for row in [re.findall(r"[A-Z]{2}|\d+", d) for d in get_daily_input(DAY)]:
         valves[row[0]] = Valve(row[0], int(row[1]), row[2:])
 
-    distance_matrix = build_distance_matrix(valves)
+    paths = find_paths(valves, "AA", 30)
 
-    queue = [(0, 0, "AA", {})]
-    visited = set()
-    while queue:
-        unreleased_pressure, time, location, opened = queue.pop(0)
-
-        if (unreleased_pressure, time, location, str(opened)) not in visited:
-            visited.add((unreleased_pressure, time, location, str(opened)))
-            unopened = [v for v in valves if v not in opened and valves[v].flow_rate != 0]
-
-            print(f"\r{unreleased_pressure} : {time}", end="")
-
-            if time >= 30 or not unopened:
-                print("")
-                return sum([(30 - v) * valves[k].flow_rate for k, v in opened.items()])
-            else:
-                for next_valve in unopened:
-                    time_to_next = distance_matrix[location][next_valve] + 1
-                    unreleased_pressure_before_next = \
-                        sum(time_to_next * valves[v].flow_rate for v in unopened)
-                    queue.append((
-                        unreleased_pressure + unreleased_pressure_before_next,
-                        time + time_to_next,
-                        next_valve,
-                        {**opened, next_valve: time + time_to_next}
-                    ))
-                queue.sort(key=lambda l: (l[0], 30 - l[1]))
-
-    return 0
+    return max(paths)[0]
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return 0
+    valves: dict[str, Valve] = {}
+    for row in [re.findall(r"[A-Z]{2}|\d+", d) for d in get_daily_input(DAY)]:
+        valves[row[0]] = Valve(row[0], int(row[1]), row[2:])
+
+    paths = sorted(find_paths(valves, "AA", 26), reverse=True)
+    j_max = 1
+    while any(x in paths[j_max][1] for x in paths[0][1]):
+        j_max += 1
+    ans = paths[0][0] + paths[j_max][0]
+    for i in range(1, j_max):
+        for j in range(i + 1, j_max + 1):
+            if not any(x in paths[j][1] for x in paths[i][1]):
+                ans = max(ans, paths[j][0] + paths[i][0])
+    return ans
 
 
 def main():
