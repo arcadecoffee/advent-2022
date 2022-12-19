@@ -4,6 +4,9 @@ Advent of Code 2022 Day 16
 import re
 import sys
 
+from dataclasses import dataclass
+from itertools import combinations
+
 from advent_tools import get_daily_input
 
 DAY = 16
@@ -29,87 +32,85 @@ if DEBUG:
             yield line.strip("\n")
 
 
+@dataclass
 class Valve:
-    def __init__(self, name: str, flow_rate: int, tunnels: list[str]):
-        self.name = name
-        self.flow_rate = flow_rate
-        self.tunnels = tunnels
+    name: str
+    flow_rate: int
+    tunnels: list[str]
+
+
+@dataclass(order=True)
+class Route:
+    pressure_released: int
+    time_remaining: int
+    route: list[str]
 
 
 def build_distance_matrix(valves: dict[str, Valve]) -> dict[str, [dict[str, int]]]:
     matrix = {}
-    for v in valves.values():
-        matrix[v.name] = {v.name: 0}
-        for t in v.tunnels:
-            matrix[v.name][t] = 1
-    for v in matrix:
-        keep_going = True
-        while keep_going:
-            keep_going = False
-            for w in [i for i in matrix[v] if i != v]:
-                for x in matrix[w]:
-                    new_distance = matrix[w][x] + matrix[v][w]
-                    if x not in matrix[v] or matrix[v][x] > new_distance:
-                        matrix[v][x] = new_distance
-                        keep_going = True
+    for v in valves:
+        matrix[v] = {i: 1 for i in valves[v].tunnels}
+
+    for valve_a in matrix:
+        for valve_b in [v for v in matrix if v != valve_a and valve_a in matrix[v]]:
+            for destination, distance in matrix[valve_a].items():
+                matrix[valve_b][destination] = min(
+                    matrix[valve_b][valve_a] + distance,
+                    matrix[valve_b].get(destination, len(valves))
+                )
 
     return {
-        k: {
-            j: v for j, v in matrix[k].items() if valves[j].flow_rate and k != j
-        } for k in matrix
+        s: {
+            k: v for k, v in d.items() if valves[k].flow_rate
+        } for s, d in matrix.items()
     }
 
 
-def find_paths(valves: dict[str, Valve], start: str, time_limit: int) \
-        -> list[tuple[int, list[str]]]:
+def load_input() -> dict[str, Valve]:
+    valves: dict[str, Valve] = {}
+    for row in [re.findall(r"[A-Z]{2}|\d+", d) for d in get_daily_input(DAY)]:
+        valves[row[0]] = Valve(row[0], int(row[1]), row[2:])
+    return valves
+
+
+def find_routes(valves: dict[str, Valve], time_limit: int) -> list[Route]:
     distances = build_distance_matrix(valves)
-    stack = [(time_limit, 0, [start])]
-    paths = []
+    routes: list[Route] = []
+    stack: list[Route] = [Route(0, time_limit, ["AA"])]
     while stack:
-        time, pressure, path = stack.pop()
-        curr_loc = path[-1]
-
-        next_locs = [
-            (valve, distance) for valve, distance in distances[curr_loc].items()
-            if distance <= time - 2 and valve not in path
-        ]
-
-        if next_locs:
-            for next_loc, dist in next_locs:
-                if dist <= time - 2 and next_loc not in path:
-                    next_time = time - dist - 1
-                    next_pressure = pressure + valves[next_loc].flow_rate * next_time
-                    stack.append((next_time, next_pressure, path + [next_loc]))
-        else:
-            paths.append((pressure, path[1:]))
-    return paths
+        curr_route = stack.pop()
+        curr_loc = curr_route.route[-1]
+        for next_loc, next_dist in distances[curr_loc].items():
+            if next_loc not in curr_route.route \
+                    and next_dist < curr_route.time_remaining - 2:
+                next_time_remaining = curr_route.time_remaining - next_dist - 1
+                next_score = curr_route.pressure_released + \
+                             next_time_remaining * valves[next_loc].flow_rate
+                next_route = curr_route.route + [next_loc]
+                stack.append(Route(next_score, next_time_remaining, next_route))
+        routes.append(curr_route)
+    return routes
 
 
 def part_1() -> int:
-    valves: dict[str, Valve] = {}
-    for row in [re.findall(r"[A-Z]{2}|\d+", d) for d in get_daily_input(DAY)]:
-        valves[row[0]] = Valve(row[0], int(row[1]), row[2:])
-
-    paths = find_paths(valves, "AA", 30)
-
-    return max(paths)[0]
+    routes = find_routes(load_input(), 30)
+    return max(routes).pressure_released
 
 
 def part_2() -> int:
-    valves: dict[str, Valve] = {}
-    for row in [re.findall(r"[A-Z]{2}|\d+", d) for d in get_daily_input(DAY)]:
-        valves[row[0]] = Valve(row[0], int(row[1]), row[2:])
+    routes = sorted(find_routes(load_input(), 26), reverse=True)
 
-    paths = sorted(find_paths(valves, "AA", 26), reverse=True)
-    j_max = 1
-    while any(x in paths[j_max][1] for x in paths[0][1]):
-        j_max += 1
-    ans = paths[0][0] + paths[j_max][0]
-    for i in range(1, j_max):
-        for j in range(i + 1, j_max + 1):
-            if not any(x in paths[j][1] for x in paths[i][1]):
-                ans = max(ans, paths[j][0] + paths[i][0])
-    return ans
+    best = (0, 0, len(routes))
+
+    for a in range(len(routes) - 1):
+        for b in range(a + 1, best[2]):
+            if set(routes[a].route) & set(routes[b].route) == {"AA"}:
+                score = routes[a].pressure_released + routes[b].pressure_released
+                if score > best[0]:
+                    best = (score, a, b)
+                    break
+
+    return best[0]
 
 
 def main():
