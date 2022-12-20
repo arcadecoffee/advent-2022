@@ -1,12 +1,11 @@
 """
 Advent of Code 2022 Day 0
 """
-import itertools
 import re
 import sys
 
+from copy import deepcopy
 from itertools import cycle
-from typing import Iterable
 
 from advent_tools import get_daily_input
 
@@ -24,104 +23,100 @@ if TEST:
             yield line.strip("\n")
 
 
-def jet_stream() -> Iterable[str]:
-    data = next(get_daily_input(DAY))
-    while True:
-        for c in data:
-            yield c
+shapes = {
+    "line": [
+        "..@@@@.",
+    ],
+    "cross": [
+        "...@...",
+        "..@@@..",
+        "...@...",
+    ],
+    "elbow": [
+        "....@..",
+        "....@..",
+        "..@@@..",
+    ],
+    "column": [
+        "..@....",
+        "..@....",
+        "..@....",
+        "..@....",
+    ],
+    "square": [
+        "..@@...",
+        "..@@...",
+    ]
+}
+
+empty_line = "......."
 
 
 class Shaft:
-    shapes = {
-        "line": [
-            "..@@@@.",
-        ],
-        "cross": [
-            "...@...",
-            "..@@@..",
-            "...@...",
-        ],
-        "elbow": [
-            "....@..",
-            "....@..",
-            "..@@@..",
-        ],
-        "column": [
-            "..@....",
-            "..@....",
-            "..@....",
-            "..@....",
-        ],
-        "square": [
-            "..@@...",
-            "..@@...",
-        ]
-    }
-
     def __init__(self):
-        self.shaft: list[list[str]] = []
-        self.jet = jet_stream()
+        self.jet = cycle(next(get_daily_input(DAY)))
+        self.rock_shape = cycle(shapes)
+        self.shaft = []
 
-    @property
-    def shaft_height(self) -> int:
-        return len(self.shaft)
-
-    def drop(self, shape: str):
-        self.shaft = self.shapes[shape] + \
-            [
-                ".......",
-                ".......",
-                ".......",
-            ] + self.shaft
-
+    def drop_rock(self):
+        rock = next(self.rock_shape)
+        self.shaft = [empty_line] + shapes[rock] + [empty_line] * 3 + self.shaft
+        rock_rows = list(range(1, len(shapes[rock]) + 1))
         while True:
-            shape_rows = [i for i in range(self.shaft_height) if "@" in self.shaft[i]]
-            gust = next(self.jet)
-            if gust == "<" and all(".@" in self.shaft[r] for r in shape_rows):
-                for r in shape_rows:
-                    s = re.search(r"([^@]*)\.(@+)([^@]*)", self.shaft[r])
-                    self.shaft[r] = s.group(1) + s.group(2) + "." + s.group(3)
-            elif gust == ">" and all("@." in self.shaft[r] for r in shape_rows):
-                for r in shape_rows:
-                    s = re.search(r"([^@]*)(@+)\.([^@]*)", self.shaft[r])
-                    self.shaft[r] = s.group(1) + "." + s.group(2) + s.group(3)
-            if max(shape_rows) < self.shaft_height - 1:
-                can_fall = True
-                for i in shape_rows:
-                    for j in range(7):
-                        if self.shaft[i][j] == "@" and self.shaft[i + 1][j] == "#":
-                            can_fall = False
-                if can_fall:
-                    for i in reversed(shape_rows):
-                        for j in range(7):
-                            if self.shaft[i][j] == "@":
-                                self.shaft[i + 1] = self.shaft[i + 1][:j] + "@" + self.shaft[i + 1][j + 1:]
-                                new_row = list(self.shaft[i])
-                                new_row[j] = "." if i == 0 else self.shaft[i - 1][j]
-                                self.shaft[i] = "".join(new_row)
-                    if self.shaft[0] == ".......":
-                        self.shaft.pop(0)
-                else:
-                    break
+            jet_dir = next(self.jet)
+            if jet_dir == ">":
+                if all("@." in self.shaft[r] for r in rock_rows):
+                    for r in rock_rows:
+                        self.shaft[r] = self.shaft[r].replace("@.", "@@")
+                        self.shaft[r] = re.sub(r"([^@])@|^@", r"\1.", self.shaft[r])
+            elif jet_dir == "<":
+                if all(".@" in self.shaft[r] for r in rock_rows):
+                    for r in rock_rows:
+                        self.shaft[r] = self.shaft[r].replace(".@", "@@")
+                        self.shaft[r] = re.sub(r"@([^@])|@$", r".\1", self.shaft[r])
+
+            can_fall = True
+            for r in rock_rows:
+                for i in range(7):
+                    if self.shaft[r][i] == "@" and \
+                            (r + 1 >= len(self.shaft) or
+                             self.shaft[r + 1][i] == "#"):
+                        can_fall = False
+            if can_fall:
+                for r in reversed(rock_rows):
+                    for i in range(7):
+                        if self.shaft[r][i] == "@":
+                            self.shaft[r + 1] = self.shaft[r + 1][:i] + \
+                                                self.shaft[r][i] + \
+                                                self.shaft[r + 1][i + 1:]
+                            if self.shaft[r - 1][i] != "#":
+                                self.shaft[r] = self.shaft[r][:i] + \
+                                                self.shaft[r - 1][i] + \
+                                                self.shaft[r][i + 1:]
+                            else:
+                                if self.shaft[r - 1][i] != "#":
+                                    self.shaft[r] = self.shaft[r][:i] + \
+                                                    "." + \
+                                                    self.shaft[r][i + 1:]
+                rock_rows = [r + 1 for r in rock_rows]
             else:
                 break
-        for i in shape_rows:
+
+        while self.shaft[0] == empty_line:
+            self.shaft.pop(0)
+
+        for i in range(len(self.shaft)):
             self.shaft[i] = self.shaft[i].replace("@", "#")
 
 
 def part_1() -> int:
-    shaft = Shaft()
-
-    shape = itertools.cycle(Shaft.shapes)
-    for i in range(13):
-        shaft.drop(next(shape))
-        print(shaft.shaft_height)
-
-
-    shaft.drop(next(shape))
-
-
-    return shaft.shaft_height
+    s = Shaft()
+    for _ in range(6):
+        s.drop_rock()
+    for _ in s.shaft:
+        print(_)
+    s.drop_rock()
+    return len(s.shaft)
 
 
 def part_2() -> int:
