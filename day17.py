@@ -1,10 +1,8 @@
 """
-Advent of Code 2022 Day 0
+Advent of Code 2022 Day 17
 """
-import re
 import sys
 
-from copy import deepcopy
 from itertools import cycle
 
 from advent_tools import get_daily_input
@@ -60,41 +58,41 @@ class RockPile:
     def height(self) -> int:
         return len(self.pile)
 
+    def can_shift(self, direction: str, pile_level: int, rock: list[int]) -> bool:
+        for r in range(len(rock)):
+            if (
+                    direction == ">" and
+                    ((rock[r] & 1) or (rock[r] >> 1 & self.pile[pile_level + r]))
+            ) or (
+                    direction == "<" and
+                    ((rock[r] & 2 ** 6) or (rock[r] << 1 & self.pile[pile_level + r]))
+            ):
+                return False
+        return True
+
+    def can_fall(self, pile_level: int, rock: list[int]) -> bool:
+        for r in range(len(rock)):
+            if ((pile_level + r >= len(self.pile) - 1) or
+                    (rock[r] & self.pile[pile_level + r + 1])):
+                return False
+        return True
+
     def drop_next(self) -> None:
         rock = [int(i, 2) for i in self.rock_shapes[next(self.rock_shape)]]
         self.pile = [0] * (3 + len(rock)) + self.pile
-        for s in range(len(self.pile)):
+        for pile_level in range(len(self.pile)):
             direction = next(self.wind_direction)
-            if direction == ">":
-                can_shift = True
-                for r in range(len(rock)):
-                    if (rock[r] & 1) or (rock[r] >> 1 & self.pile[s + r]):
-                        can_shift = False
-                        break
-                if can_shift:
-                    for r in range(len(rock)):
-                        rock[r] = rock[r] >> 1
-            elif direction == "<":
-                can_shift = True
-                for r in range(len(rock)):
-                    if (rock[r] & 2**6) or (rock[r] << 1 & self.pile[s + r]):
-                        can_shift = False
-                        break
-                if can_shift:
-                    for r in range(len(rock)):
-                        rock[r] = rock[r] << 1
 
-            can_fall = True
-            for r in range(len(rock)):
-                if (s + r >= len(self.pile) - 1) or (rock[r] & self.pile[s + r + 1]):
-                    can_fall = False
-                    break
-            if not can_fall:
+            if self.can_shift(direction, pile_level, rock):
                 for r in range(len(rock)):
-                    self.pile[s + r] = self.pile[s + r] | rock[r]
-                break
-        while self.pile[0] == 0:
-            self.pile.pop(0)
+                    rock[r] = rock[r] >> 1 if direction == ">" else rock[r] << 1
+
+            if not self.can_fall(pile_level, rock):
+                for r in range(len(rock)):
+                    self.pile[pile_level + r] = self.pile[pile_level + r] | rock[r]
+                while self.pile[0] == 0:
+                    self.pile.pop(0)
+                return
 
     def dump(self) -> str:
         output = ""
@@ -107,15 +105,12 @@ class RockPile:
 
 
 def find_pattern(data: list[int]) -> tuple[list[int], list[int]]:
-    for i in range(len(data)):
-        h = data[i:]
-        for x in range(2, len(h) // 2):
-            if h[0:x] == h[x:2 * x]:
-                pass
-                if all([(h[0:x] == h[y:y + x]) for y in range(x, len(h) - x, x)]):
-                    return data[:i], data[i:i + x]
-            else:
-                x += 1
+    for p in range(len(data)):
+        sd = data[p:]
+        for r in range(2, len(sd) // 2):
+            if sd[0:r] == sd[r:2 * r]:
+                if all([(sd[0:r] == sd[y:y + r]) for y in range(r, len(sd) - r, r)]):
+                    return data[:p], data[p:p + r]
     return [], []
 
 
