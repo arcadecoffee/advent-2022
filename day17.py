@@ -23,7 +23,7 @@ if TEST:
             yield line.strip("\n")
 
 
-class Pile:
+class RockPile:
 
     rock_shapes = {
         "line": [
@@ -54,21 +54,21 @@ class Pile:
     def __init__(self, wind_directions: str):
         self.wind_direction = cycle(wind_directions)
         self.rock_shape = cycle(self.rock_shapes)
-        self.stack: list[int] = []
+        self.pile: list[int] = []
 
     @property
     def height(self) -> int:
-        return len(self.stack)
+        return len(self.pile)
 
-    def drop_next(self):
+    def drop_next(self) -> None:
         rock = [int(i, 2) for i in self.rock_shapes[next(self.rock_shape)]]
-        self.stack = [0] * (3 + len(rock)) + self.stack
-        for s in range(len(self.stack)):
+        self.pile = [0] * (3 + len(rock)) + self.pile
+        for s in range(len(self.pile)):
             direction = next(self.wind_direction)
             if direction == ">":
                 can_shift = True
                 for r in range(len(rock)):
-                    if (rock[r] & 1) or (rock[r] >> 1 & self.stack[s + r]):
+                    if (rock[r] & 1) or (rock[r] >> 1 & self.pile[s + r]):
                         can_shift = False
                         break
                 if can_shift:
@@ -77,7 +77,7 @@ class Pile:
             elif direction == "<":
                 can_shift = True
                 for r in range(len(rock)):
-                    if (rock[r] & 2**6) or (rock[r] << 1 & self.stack[s + r]):
+                    if (rock[r] & 2**6) or (rock[r] << 1 & self.pile[s + r]):
                         can_shift = False
                         break
                 if can_shift:
@@ -86,19 +86,19 @@ class Pile:
 
             can_fall = True
             for r in range(len(rock)):
-                if (s + r >= len(self.stack) - 1) or (rock[r] & self.stack[s + r + 1]):
+                if (s + r >= len(self.pile) - 1) or (rock[r] & self.pile[s + r + 1]):
                     can_fall = False
                     break
             if not can_fall:
                 for r in range(len(rock)):
-                    self.stack[s + r] = self.stack[s + r] | rock[r]
+                    self.pile[s + r] = self.pile[s + r] | rock[r]
                 break
-        while self.stack[0] == 0:
-            self.stack.pop(0)
+        while self.pile[0] == 0:
+            self.pile.pop(0)
 
     def dump(self) -> str:
         output = ""
-        for r in self.stack:
+        for r in self.pile:
             output += "|" + \
                       "".join(["#" if c == "1" else "." for c in format(r, "07b")]) + \
                       "|\n"
@@ -106,16 +106,45 @@ class Pile:
         return output
 
 
+def find_pattern(data: list[int]) -> tuple[list[int], list[int]]:
+    for i in range(len(data)):
+        h = data[i:]
+        for x in range(2, len(h) // 2):
+            if h[0:x] == h[x:2 * x]:
+                pass
+                if all([(h[0:x] == h[y:y + x]) for y in range(x, len(h) - x, x)]):
+                    return data[:i], data[i:i + x]
+            else:
+                x += 1
+    return [], []
+
+
 def part_1() -> int:
-    pile = Pile(next(get_daily_input(DAY)))
+    pile = RockPile(next(get_daily_input(DAY)))
     for _ in range(2022):
         pile.drop_next()
     return pile.height
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    num_rocks = 1000000000000
+    sample_size = 10000
+
+    pile = RockPile(next(get_daily_input(DAY)))
+
+    height_deltas = []
+    for _ in range(sample_size):
+        prev_height = pile.height
+        pile.drop_next()
+        height_deltas.append(pile.height - prev_height)
+
+    preamble, repetition = find_pattern(height_deltas)
+    p_len = len(preamble)
+    r_len = len(repetition)
+
+    return sum(preamble) \
+        + sum(repetition) * ((num_rocks - p_len) // r_len) \
+        + sum(repetition[:((num_rocks - p_len) % r_len)])
 
 
 def main():
