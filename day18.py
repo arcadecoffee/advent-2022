@@ -34,11 +34,6 @@ if TEST:
 class Point:
     def __init__(self, x, y, z):
         self.x, self.y, self.z = x, y, z
-        self.up = self.down = self.left = self.right = self.front = self.back = True
-
-    @property
-    def open_sides(self) -> int:
-        return sum([self.up, self.down, self.left, self.right, self.front, self.back])
 
     def __repr__(self):
         return f"{self.x}, {self.y}, {self.z}"
@@ -47,24 +42,20 @@ class Point:
 def part_1() -> int:
     points = [Point(*[int(i) for i in s.split(",")]) for s in get_daily_input(DAY)]
 
+    faces = 0
     for p_i in range(len(points)):
         p = points[p_i]
         for r_i in range(p_i + 1, len(points)):
             r = points[r_i]
-            if p.x == r.x and p.y == r.y and p.z == r.z + 1:
-                p.up = r.down = False
-            if p.x == r.x and p.y == r.y and p.z == r.z - 1:
-                p.down = r.up = False
-            if p.x == r.x and p.y == r.y + 1 and p.z == r.z:
-                p.left = r.right = False
-            if p.x == r.x and p.y == r.y - 1 and p.z == r.z:
-                p.right = r.left = False
-            if p.x == r.x + 1 and p.y == r.y and p.z == r.z:
-                p.front = r.back = False
-            if p.x == r.x - 1 and p.y == r.y and p.z == r.z:
-                p.back = r.front = False
-
-    return sum(p.open_sides for p in points)
+            faces += 2 * (
+                    (p.x == r.x and p.y == r.y and p.z == r.z + 1) +
+                    (p.x == r.x and p.y == r.y and p.z == r.z - 1) +
+                    (p.x == r.x and p.y == r.y + 1 and p.z == r.z) +
+                    (p.x == r.x and p.y == r.y - 1 and p.z == r.z) +
+                    (p.x == r.x + 1 and p.y == r.y and p.z == r.z) +
+                    (p.x == r.x - 1 and p.y == r.y and p.z == r.z)
+            )
+    return len(points) * 6 - faces
 
 
 def part_2() -> int:
@@ -89,7 +80,6 @@ def part_2() -> int:
                         faces += 1
                     else:
                         outside_points.append((ox, oy, oz))
-
     return faces
 
 
