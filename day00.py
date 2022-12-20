@@ -7,14 +7,14 @@ from advent_tools import get_daily_input
 
 DAY = 0
 
-DEBUG = sys.argv[1] == "debug" if len(sys.argv) > 1 else False
+TEST = sys.argv[1] == "test" if len(sys.argv) > 1 else False
 
-DEBUG_DATA = """
+TEST_DATA = """
 """
 
-if DEBUG:
+if TEST:
     def get_daily_input(_):
-        for line in DEBUG_DATA.strip().split("\n"):
+        for line in TEST_DATA.strip().split("\n"):
             yield line.strip("\n")
 
 
