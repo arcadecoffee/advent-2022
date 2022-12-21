@@ -52,6 +52,9 @@ class Blueprint:
     id: int
     robots: RobotSet
 
+    def max_cost(self, resource: str) -> int:
+        return max([r.cost.get(resource, 0) for r in self.robots.all if r.type != resource])
+
     @classmethod
     def create_from_input(cls, input_string: str) -> "Blueprint":
         vals = [int(i) for i in re.findall(r"\d+", input_string)]
@@ -81,17 +84,14 @@ class Simulation:
         }
 
         self.next_build: Robot = blueprint.robots.none
+        self.passed_on: set[Robot] = set()
         self.steps = []
 
-    def take_turn(self):
+    def run(self):
         # start building
         self.steps.append(self.next_build.type)
         for k, v in self.next_build.cost.items():
             self.resources[k] -= v
-
-        previous_options =\
-            [r for r in self.blueprint.robots.all
-             if r.can_build(self.resources) and r.type != "none"]
 
         # collect resources
         for k, v in self.robots.items():
@@ -104,15 +104,21 @@ class Simulation:
         self.turn += 1
 
         # move on to next step
+
+        # these are dead-ends if we don't have these robots by this deadline
         if ((self.turn > self.turn_limit - 2 and self.robots["geode"] == 0) or
             (self.turn > self.turn_limit - 4 and self.robots["obsidian"] == 0) or
             (self.turn > self.turn_limit - 6 and self.robots["clay"] == 0) or
                 self.turn >= self.turn_limit):
             return self.resources["geode"], self.steps
 
-        options = {r for r in self.blueprint.robots.all
-                   if r.can_build(self.resources) and r not in previous_options}
+        options = {r for r in self.blueprint.robots.all if r.can_build(self.resources)}
 
+        # if we passed on building these robots last turn, pass again now
+        if self.next_build.type == "none":
+            options -= self.passed_on
+
+        # don't bother building these if there are only t minutes left
         for t, r in [(1, self.blueprint.robots.geode),
                      (3, self.blueprint.robots.obsidian),
                      (5, self.blueprint.robots.clay),
@@ -120,6 +126,14 @@ class Simulation:
             if self.turn >= self.turn_limit - t:
                 options -= {r}
 
+        # it doesn't do any good to have more than n of these robots
+        for n, r in [("ore", self.blueprint.robots.ore),
+                     ("clay", self.blueprint.robots.clay),
+                     ("obsidian", self.blueprint.robots.obsidian)]:
+            if self.robots[n] >= self.blueprint.max_cost(n):
+                options -= {r}
+
+        # build a geode robot if we can or build first obsidian asap
         if self.blueprint.robots.geode in options:
             options = {self.blueprint.robots.geode}
         elif self.blueprint.robots.obsidian in options and self.robots["obsidian"] == 0:
@@ -128,7 +142,8 @@ class Simulation:
         next_turns = []
         for opt in options:
             self.next_build = opt
-            next_turns.append(deepcopy(self).take_turn())
+            self.passed_on = options - {opt}
+            next_turns.append(deepcopy(self).run())
         return max(next_turns)
 
 
@@ -136,7 +151,8 @@ def part_1() -> int:
     blueprints = [Blueprint.create_from_input(bp) for bp in get_daily_input(DAY)]
     results = []
     for bp in blueprints:
-        r = Simulation(bp).take_turn()
+        r = Simulation(bp).run()
+        print((bp.id * r[0], r))
         results.append((bp.id * r[0], r))
     return sum(r[0] for r in results)
 
@@ -145,7 +161,7 @@ def part_2() -> int:
     blueprints = [Blueprint.create_from_input(bp) for bp in get_daily_input(DAY)]
     results = []
     for bp in [blueprints[0]]:
-        r = Simulation(bp, turn_limit=32).take_turn()
+        r = Simulation(bp, turn_limit=32).run()
         results.append((bp.id * r[0], r))
     return sum(r[0] for r in results)
 
