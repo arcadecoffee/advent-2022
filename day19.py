@@ -59,6 +59,9 @@ class State:
     def __gt__(self, other):
         return self.resources["geode"] > other.resources["geode"]
 
+    def __repr__(self):
+        return f"{{robots: {self.robots}, resources: {self.resources}}}"
+
 
 def evaluate_options(
         blueprint: Blueprint,
@@ -69,13 +72,12 @@ def evaluate_options(
 
     # determine options for what to build in the next state
     options: list[str] = []
-    results = []
     if len(prior_states) <= timelimit:
         # look for something affordable and useful and not ignored last time
         for robot, cost in blueprint.cost.items():
-            if curr_state.robots[robot] < blueprint.useful[robot] and \
-                    all(curr_state.resources[k] >= v for k, v in cost.items()) and \
-                    robot not in curr_state.ignored:
+            if (curr_state.robots[robot] < blueprint.useful[robot]
+                    and all(curr_state.resources[k] >= v for k, v in cost.items())
+                    and robot not in curr_state.ignored):
                 options.append(robot)
 
         # geodes before anything else, don't bother with other types at the end
@@ -83,12 +85,16 @@ def evaluate_options(
             options = ["geode"]
         elif timelimit - len(prior_states) < 2:
             options = []
+        else:
+            # cutting off plans that build resources more than 2 phases back
+            if ((curr_state.robots["obsidian"] or "obsidian" in options)
+                    and "ore" in options):
+                options.remove("ore")
+            if ((curr_state.robots["geode"] or "geode" in options)
+                    and "clay" in options):
+                options.remove("clay")
 
-        if curr_state.robots["obsidian"] and "ore" in options:
-            options.remove("ore")
-        if curr_state.robots["geode"] and "clay" in options:
-            options.remove("clay")
-
+        # add new resources
         next_state = curr_state.copy()
         for r, n in next_state.robots.items():
             next_state.resources[r] += n
@@ -97,6 +103,7 @@ def evaluate_options(
         next_state.ignored += options
         results = [evaluate_options(blueprint, prior_states + [next_state], timelimit)]
 
+        # the rest of the options
         for opt in options:
             next_state_opt = next_state.copy()
             next_state_opt.ignored = []
@@ -128,13 +135,12 @@ def part_2() -> int:
     result = 1
     for bp in blueprints:
         r = evaluate_options(bp, [State()], 32)
-        print(r)
         result *= r[0]
     return result
 
 
 def main():
-    # print(f"Part 1: {part_1()}")
+    print(f"Part 1: {part_1()}")
     print(f"Part 2: {part_2()}")
 
 
