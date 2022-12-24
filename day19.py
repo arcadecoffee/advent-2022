@@ -68,11 +68,12 @@ def evaluate_options(
         prior_states: list[State],
         timelimit: int = 26
 ) -> [tuple[int, list]]:
+    time_remaining = timelimit - len(prior_states)
     curr_state = prior_states[-1]
 
     # determine options for what to build in the next state
     options: list[str] = []
-    if len(prior_states) <= timelimit:
+    if time_remaining >= 0:
         # look for something affordable and useful and not ignored last time
         for robot, cost in blueprint.cost.items():
             if (curr_state.robots[robot] < blueprint.useful[robot]
@@ -83,15 +84,15 @@ def evaluate_options(
         # geodes before anything else, don't bother with other types at the end
         if "geode" in options:
             options = ["geode"]
-        elif timelimit - len(prior_states) < 2:
+        elif time_remaining < 1:
             options = []
         else:
             # cutting off plans that build resources more than 2 phases back
-            if ((curr_state.robots["obsidian"] or "obsidian" in options)
-                    and "ore" in options):
+            if ((curr_state.robots["clay"] > 3 or curr_state.robots["obsidian"]
+                 or "obsidian" in options) and "ore" in options):
                 options.remove("ore")
-            if ((curr_state.robots["geode"] or "geode" in options)
-                    and "clay" in options):
+            if ((curr_state.robots["obsidian"] > 3 or curr_state.robots["geode"]
+                 or "geode" in options) and "clay" in options):
                 options.remove("clay")
 
         # add new resources
