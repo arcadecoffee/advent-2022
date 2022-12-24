@@ -3,8 +3,6 @@ Advent of Code 2022 Day 19
 """
 import re
 import sys
-from copy import deepcopy
-from dataclasses import dataclass, field
 
 from advent_tools import get_daily_input
 
@@ -24,6 +22,8 @@ if TEST:
 
 
 class Blueprint:
+    __slots__ = ("id", "cost", "useful")
+
     def __init__(self, input_string: str) -> None:
         vals = [int(i) for i in re.findall(r"\d+", input_string)]
         self.id = vals[0]
@@ -42,6 +42,8 @@ class Blueprint:
 
 
 class State:
+    __slots__ = ("robots", "resources", "ignored")
+
     def __init__(self, robots: dict = None, resources: dict = None, ignored: list = None):
         self.robots = robots.copy() if robots else {
             "ore": 1, "clay": 0, "obsidian": 0, "geode": 0
@@ -58,7 +60,11 @@ class State:
         return self.resources["geode"] > other.resources["geode"]
 
 
-def evaluate_options(blueprint: Blueprint, prior_states: list[State], timelimit: int = 26) -> [tuple[int, list]]:
+def evaluate_options(
+        blueprint: Blueprint,
+        prior_states: list[State],
+        timelimit: int = 26
+) -> [tuple[int, list]]:
     curr_state = prior_states[-1]
 
     # determine options for what to build in the next state
@@ -78,6 +84,11 @@ def evaluate_options(blueprint: Blueprint, prior_states: list[State], timelimit:
         elif timelimit - len(prior_states) < 2:
             options = []
 
+        if curr_state.robots["obsidian"] and "ore" in options:
+            options.remove("ore")
+        if curr_state.robots["geode"] and "clay" in options:
+            options.remove("clay")
+
         next_state = curr_state.copy()
         for r, n in next_state.robots.items():
             next_state.resources[r] += n
@@ -92,7 +103,9 @@ def evaluate_options(blueprint: Blueprint, prior_states: list[State], timelimit:
             next_state_opt.robots[opt] += 1
             for r, n in blueprint.cost[opt].items():
                 next_state_opt.resources[r] -= n
-            results.append(evaluate_options(blueprint, prior_states + [next_state_opt], timelimit))
+            results.append(
+                evaluate_options(blueprint, prior_states + [next_state_opt], timelimit)
+            )
 
         return max(results)
 
@@ -110,16 +123,19 @@ def part_1() -> int:
 
 def part_2() -> int:
     blueprints = [Blueprint(bp) for bp in get_daily_input(DAY)]
-    result = 0
-    for bp in [blueprints[0]]:
+    if len(blueprints) > 3:
+        blueprints = blueprints[:3]
+    result = 1
+    for bp in blueprints:
         r = evaluate_options(bp, [State()], 32)
-        result += r[0] * bp.id
+        print(r)
+        result *= r[0]
     return result
 
 
 def main():
-    print(f"Part 1: {part_1()}")
-    # print(f"Part 2: {part_2()}")
+    # print(f"Part 1: {part_1()}")
+    print(f"Part 2: {part_2()}")
 
 
 if __name__ == "__main__":
@@ -127,4 +143,5 @@ if __name__ == "__main__":
 
 """
 Part 1: 1127 is right
+Part 2: 21546 is right
 """
