@@ -23,147 +23,98 @@ if TEST:
             yield line.strip("\n")
 
 
-@dataclass(eq=True, frozen=True)
-class Robot:
-    type: str = None
-    cost: dict[str, int] = field(default_factory=dict)
-
-    def can_build(self, resources: dict[str, int]) -> bool:
-        return all(self.cost[r] <= resources[r] for r in self.cost)
-
-    def __hash__(self):
-        return hash(("type", self.type) + tuple(sorted(self.cost.items())))
-
-@dataclass
-class RobotSet:
-    ore: Robot
-    clay: Robot
-    obsidian: Robot
-    geode: Robot
-    none: Robot = Robot("none")
-
-    @property
-    def all(self) -> list[Robot]:
-        return [self.ore, self.clay, self.obsidian, self.geode, self.none]
-
-
-@dataclass
 class Blueprint:
-    id: int
-    robots: RobotSet
-
-    def max_cost(self, resource: str) -> int:
-        return max([r.cost.get(resource, 0) for r in self.robots.all if r.type != resource])
-
-    @classmethod
-    def create_from_input(cls, input_string: str) -> "Blueprint":
+    def __init__(self, input_string: str) -> None:
         vals = [int(i) for i in re.findall(r"\d+", input_string)]
-        return Blueprint(
-            id=vals[0],
-            robots=RobotSet(
-                ore=Robot(type="ore", cost={"ore": vals[1]}),
-                clay=Robot(type="clay", cost={"ore": vals[2]}),
-                obsidian=Robot(type="obsidian", cost={"ore": vals[3], "clay": vals[4]}),
-                geode=Robot(type="geode", cost={"ore": vals[5], "obsidian": vals[6]})
-            )
-        )
-
-
-class Simulation:
-    def __init__(self, blueprint: Blueprint, turn: int = 0, turn_limit: int = 24):
-        self.blueprint = blueprint
-        self.turn = turn
-        self.turn_limit = turn_limit
-
-        self.resources: dict[str, int] = {
-            "ore": 0, "clay": 0, "obsidian": 0, "geode": 0
+        self.id = vals[0]
+        self.cost = {
+            "ore": {"ore": vals[1]},
+            "clay": {"ore": vals[2]},
+            "obsidian": {"ore": vals[3], "clay": vals[4]},
+            "geode": {"ore": vals[5], "obsidian": vals[6]}
+        }
+        self.useful = {
+            "ore": max(self.cost["clay"]["ore"], self.cost["obsidian"]["ore"], self.cost["geode"]["ore"]),
+            "clay": self.cost["obsidian"]["clay"],
+            "obsidian": self.cost["geode"]["obsidian"],
+            "geode": float("inf")
         }
 
-        self.robots: dict[str, int] = {
+
+class State:
+    def __init__(self, robots: dict = None, resources: dict = None, ignored: list = None):
+        self.robots = robots.copy() if robots else {
             "ore": 1, "clay": 0, "obsidian": 0, "geode": 0
         }
+        self.resources = resources.copy() if resources else {
+            "ore": 0, "clay": 0, "obsidian": 0, "geode": 0
+        }
+        self.ignored = ignored.copy() if ignored else []
 
-        self.next_build: Robot = blueprint.robots.none
-        self.passed_on: set[Robot] = set()
-        self.steps = []
+    def copy(self) -> "State":
+        return State(self.robots, self.resources, self.ignored)
 
-    def run(self):
-        # start building
-        self.steps.append(self.next_build.type)
-        for k, v in self.next_build.cost.items():
-            self.resources[k] -= v
+    def __gt__(self, other):
+        return self.resources["geode"] > other.resources["geode"]
 
-        # collect resources
-        for k, v in self.robots.items():
-            self.resources[k] += v
 
-        # building complete
-        if self.next_build.type != "none":
-            self.robots[self.next_build.type] += 1
+def evaluate_options(blueprint: Blueprint, prior_states: list[State], timelimit: int = 26) -> [tuple[int, list]]:
+    curr_state = prior_states[-1]
 
-        self.turn += 1
+    # determine options for what to build in the next state
+    options: list[str] = []
+    results = []
+    if len(prior_states) <= timelimit:
+        # look for something affordable and useful and not ignored last time
+        for robot, cost in blueprint.cost.items():
+            if curr_state.robots[robot] < blueprint.useful[robot] and \
+                    all(curr_state.resources[k] >= v for k, v in cost.items()) and \
+                    robot not in curr_state.ignored:
+                options.append(robot)
 
-        # move on to next step
+        # geodes before anything else, don't bother with other types at the end
+        if "geode" in options:
+            options = ["geode"]
+        elif timelimit - len(prior_states) < 2:
+            options = []
 
-        # these are dead-ends if we don't have these robots by this deadline
-        if ((self.turn > self.turn_limit - 2 and self.robots["geode"] == 0) or
-            (self.turn > self.turn_limit - 4 and self.robots["obsidian"] == 0) or
-            (self.turn > self.turn_limit - 6 and self.robots["clay"] == 0) or
-                self.turn >= self.turn_limit):
-            return self.resources["geode"], self.steps
+        next_state = curr_state.copy()
+        for r, n in next_state.robots.items():
+            next_state.resources[r] += n
 
-        options = {r for r in self.blueprint.robots.all if r.can_build(self.resources)}
+        # the 'do nothing' option
+        next_state.ignored += options
+        results = [evaluate_options(blueprint, prior_states + [next_state], timelimit)]
 
-        # if we passed on building these robots last turn, pass again now
-        if self.next_build.type == "none":
-            options -= self.passed_on
-
-        # don't bother building these if there are only t minutes left
-        for t, r in [(1, self.blueprint.robots.geode),
-                     (3, self.blueprint.robots.obsidian),
-                     (5, self.blueprint.robots.clay),
-                     (7, self.blueprint.robots.ore)]:
-            if self.turn >= self.turn_limit - t:
-                options -= {r}
-
-        # it doesn't do any good to have more than n of these robots
-        for n, r in [("ore", self.blueprint.robots.ore),
-                     ("clay", self.blueprint.robots.clay),
-                     ("obsidian", self.blueprint.robots.obsidian)]:
-            if self.robots[n] >= self.blueprint.max_cost(n):
-                options -= {r}
-
-        # build a geode robot if we can or build first obsidian asap
-        if self.blueprint.robots.geode in options:
-            options = {self.blueprint.robots.geode}
-        elif self.blueprint.robots.obsidian in options and self.robots["obsidian"] == 0:
-            options = {self.blueprint.robots.obsidian}
-
-        next_turns = []
         for opt in options:
-            self.next_build = opt
-            self.passed_on = options - {opt}
-            next_turns.append(deepcopy(self).run())
-        return max(next_turns)
+            next_state_opt = next_state.copy()
+            next_state_opt.ignored = []
+            next_state_opt.robots[opt] += 1
+            for r, n in blueprint.cost[opt].items():
+                next_state_opt.resources[r] -= n
+            results.append(evaluate_options(blueprint, prior_states + [next_state_opt], timelimit))
+
+        return max(results)
+
+    return prior_states[-1].resources["geode"], prior_states
 
 
 def part_1() -> int:
-    blueprints = [Blueprint.create_from_input(bp) for bp in get_daily_input(DAY)]
-    results = []
+    blueprints = [Blueprint(bp) for bp in get_daily_input(DAY)]
+    result = 0
     for bp in blueprints:
-        r = Simulation(bp).run()
-        print((bp.id * r[0], r))
-        results.append((bp.id * r[0], r))
-    return sum(r[0] for r in results)
+        r = evaluate_options(bp, [State()], 24)
+        result += r[0] * bp.id
+    return result
 
 
 def part_2() -> int:
-    blueprints = [Blueprint.create_from_input(bp) for bp in get_daily_input(DAY)]
-    results = []
+    blueprints = [Blueprint(bp) for bp in get_daily_input(DAY)]
+    result = 0
     for bp in [blueprints[0]]:
-        r = Simulation(bp, turn_limit=32).run()
-        results.append((bp.id * r[0], r))
-    return sum(r[0] for r in results)
+        r = evaluate_options(bp, [State()], 32)
+        result += r[0] * bp.id
+    return result
 
 
 def main():
