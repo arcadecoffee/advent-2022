@@ -51,29 +51,29 @@ def part_1() -> int:
     for e in all_elements:
         # dump(all_elements)
 
-        if e.value % len(all_elements) != 0:
-            e.prev.next = e.next
-            e.next.prev = e.prev
+        steps = e.value % (len(all_elements) - 1)
+        # if e.value < 0:
+        #     steps = len(all_elements) - 1 + steps
+        #
+        # if steps % len(all_elements) != 0:
+        e.prev.next = e.next
+        e.next.prev = e.prev
 
-            steps = e.value
-            if e.value < 0:
-                steps = len(all_elements) - 1 + steps
+        new_prev = e.prev
+        for _ in range(steps):
+            new_prev = new_prev.next
 
-            new_prev = e.prev
-            for _ in range(steps):
-                new_prev = new_prev.next
-
-            e.prev = new_prev
-            e.next = new_prev.next
-            new_prev.next = e
-            e.next.prev = e
+        e.prev = new_prev
+        e.next = new_prev.next
+        e.prev.next = e
+        e.next.prev = e
 
     # dump(all_elements)
 
     answer = 0
     n = zero
     for _ in range(3):
-        for _ in range(1000):
+        for _ in range(1000 % len(all_elements)):
             n = n.next
         answer += n.value
 
@@ -103,5 +103,5 @@ if __name__ == "__main__":
     main()
 
 """
-Part 1: 7030 is too low. 19327 is too high. Not 8965...
+Part 1: 13522
 """
