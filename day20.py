@@ -49,26 +49,19 @@ def part_1() -> int:
 
     # start mixing
     for e in all_elements:
-        # dump(all_elements)
-
         steps = e.value % (len(all_elements) - 1)
-        # if e.value < 0:
-        #     steps = len(all_elements) - 1 + steps
-        #
-        # if steps % len(all_elements) != 0:
-        e.prev.next = e.next
-        e.next.prev = e.prev
+        if steps != 0:
+            e.prev.next = e.next
+            e.next.prev = e.prev
 
-        new_prev = e.prev
-        for _ in range(steps):
-            new_prev = new_prev.next
+            new_prev = e.prev
+            for _ in range(steps):
+                new_prev = new_prev.next
 
-        e.prev = new_prev
-        e.next = new_prev.next
-        e.prev.next = e
-        e.next.prev = e
-
-    # dump(all_elements)
+            e.prev = new_prev
+            e.next = new_prev.next
+            e.prev.next = e
+            e.next.prev = e
 
     answer = 0
     n = zero
