@@ -32,12 +32,21 @@ class Element:
         self.prev = None
 
 
-def part_1() -> int:
-    # build the circular linked-list
-    all_elements:  list[Element] = []
+def find_answer(all_elements, zero):
+    answer = 0
+    n = zero
+    for _ in range(3):
+        for _ in range(1000 % len(all_elements)):
+            n = n.next
+        answer += n.value
+    return answer
+
+
+def load_elements(decryption_key: int = 1):
+    all_elements: list[Element] = []
     zero = None
     for value in get_daily_input(DAY):
-        curr_element = Element(int(value))
+        curr_element = Element(int(value) * decryption_key)
         if curr_element.value == 0:
             zero = curr_element
         if all_elements:
@@ -46,31 +55,25 @@ def part_1() -> int:
         all_elements.append(curr_element)
     all_elements[-1].next = all_elements[0]
     all_elements[0].prev = all_elements[-1]
+    return all_elements, zero
 
-    # start mixing
-    for e in all_elements:
-        steps = e.value % (len(all_elements) - 1)
-        if steps != 0:
-            e.prev.next = e.next
-            e.next.prev = e.prev
 
-            new_prev = e.prev
-            for _ in range(steps):
-                new_prev = new_prev.next
+def mix(all_elements, passes: int = 1):
+    for _ in range(passes):
+        for e in all_elements:
+            steps = e.value % (len(all_elements) - 1)
+            if steps != 0:
+                e.prev.next = e.next
+                e.next.prev = e.prev
 
-            e.prev = new_prev
-            e.next = new_prev.next
-            e.prev.next = e
-            e.next.prev = e
+                new_prev = e.prev
+                for _ in range(steps):
+                    new_prev = new_prev.next
 
-    answer = 0
-    n = zero
-    for _ in range(3):
-        for _ in range(1000 % len(all_elements)):
-            n = n.next
-        answer += n.value
-
-    return answer
+                e.prev = new_prev
+                e.next = new_prev.next
+                e.prev.next = e
+                e.next.prev = e
 
 
 def dump(all_elements):
@@ -82,9 +85,18 @@ def dump(all_elements):
     print(", ".join(cv))
 
 
+def part_1() -> int:
+    all_elements, zero = load_elements()
+    mix(all_elements)
+    answer = find_answer(all_elements, zero)
+    return answer
+
+
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    all_elements, zero = load_elements(decryption_key=811589153)
+    mix(all_elements, passes=10)
+    answer = find_answer(all_elements, zero)
+    return answer
 
 
 def main():
