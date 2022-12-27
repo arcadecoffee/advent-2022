@@ -34,7 +34,9 @@ class Blueprint:
             "geode": {"ore": vals[5], "obsidian": vals[6]}
         }
         self.useful = {
-            "ore": max(self.cost["clay"]["ore"], self.cost["obsidian"]["ore"], self.cost["geode"]["ore"]),
+            "ore": max(self.cost["clay"]["ore"],
+                       self.cost["obsidian"]["ore"],
+                       self.cost["geode"]["ore"]),
             "clay": self.cost["obsidian"]["clay"],
             "obsidian": self.cost["geode"]["obsidian"],
             "geode": float("inf")
@@ -44,7 +46,8 @@ class Blueprint:
 class State:
     __slots__ = ("robots", "resources", "ignored")
 
-    def __init__(self, robots: dict = None, resources: dict = None, ignored: list = None):
+    def __init__(self, robots: dict = None, resources: dict = None,
+                 ignored: list = None):
         self.robots = robots.copy() if robots else {
             "ore": 1, "clay": 0, "obsidian": 0, "geode": 0
         }
@@ -147,8 +150,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-Part 1: 1127 is right
-Part 2: 21546 is right
-"""
