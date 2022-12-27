@@ -76,15 +76,6 @@ def mix(all_elements, passes: int = 1):
                 e.next.prev = e
 
 
-def dump(all_elements):
-    ce = all_elements[0]
-    cv = []
-    for i in range(len(all_elements)):
-        cv.append(str(ce.value))
-        ce = ce.next
-    print(", ".join(cv))
-
-
 def part_1() -> int:
     all_elements, zero = load_elements()
     mix(all_elements)
@@ -106,7 +97,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-Part 1: 13522
-"""
