@@ -3,6 +3,7 @@ Advent of Code 2022 Day 21
 """
 import re
 import sys
+from typing import Iterable
 
 from advent_tools import get_daily_input
 
@@ -34,82 +35,87 @@ if TEST:
             yield line.strip("\n")
 
 
-def load_data() -> dict[str, [str | int]]:
-    data = {}
-    for line in get_daily_input(DAY):
-        name, value = line.split(": ")
-        data[name] = int(value) if value.isnumeric() else value
-    return data
+class MonkeyMathSolver:
+    operations: dict[str, callable] = {
+        "+": lambda a, b: a + b,
+        "-": lambda a, b: a - b,
+        "*": lambda a, b: a * b,
+        "/": lambda a, b: a // b,
+    }
 
+    inverse_right: dict[str, callable] = {
+        "+": lambda a, b: a - b,
+        "-": lambda a, b: a + b,
+        "*": lambda a, b: a // b,
+        "/": lambda a, b: a * b,
+    }
 
-operations: dict[str, callable] = {
-    "+": lambda a, b: a + b,
-    "-": lambda a, b: a - b,
-    "*": lambda a, b: a * b,
-    "/": lambda a, b: a // b,
-}
+    inverse_left: dict[str, callable] = {
+        "+": lambda a, b: a - b,
+        "-": lambda a, b: (a - b) * -1,
+        "*": lambda a, b: a // b,
+        "/": lambda a, b: b // a,
+    }
 
-inverse_right: dict[str, callable] = {
-    "+": lambda a, b: a - b,
-    "-": lambda a, b: a + b,
-    "*": lambda a, b: a // b,
-    "/": lambda a, b: a * b,
-}
+    def __init__(self, input_data: Iterable[str]):
+        self.data: dict[str, [str | int]] = {}
+        for line in input_data:
+            name, value = line.split(": ")
+            self.data[name] = int(value) if value.isnumeric() else value
 
-inverse_left: dict[str, callable] = {
-    "+": lambda a, b: a - b,
-    "-": lambda a, b: (a - b) * -1,
-    "*": lambda a, b: a // b,
-    "/": lambda a, b: b // a,
-}
-
-
-def solve(data: dict[str, [str | int]], key: str) -> int | str:
-    if type(data[key]) == int:
-        return data[key]
-    else:
-        v1, op, v2 = data[key].split(" ")
-        if data.get(v1):
-            v1 = solve(data, v1)
-        if data.get(v2):
-            v2 = solve(data, v2)
-        if type(v1) == int and type(v2) == int:
-            return operations[op](v1, v2)
+    def resolve_root(self, data: dict[str, [str | int]] = None,
+                     key: str = "root") -> int | str:
+        if not data:
+            data = self.data
+        if type(data[key]) == int:
+            return data[key]
         else:
-            return f"({v1} {op} {v2})"
+            v1, op, v2 = data[key].split(" ")
+            if data.get(v1):
+                v1 = self.resolve_root(data, v1)
+            if data.get(v2):
+                v2 = self.resolve_root(data, v2)
+            if type(v1) == int and type(v2) == int:
+                return self.operations[op](v1, v2)
+            else:
+                return f"({v1} {op} {v2})"
+
+    def solve_for(self, key: str = "humn"):
+        data = self.data.copy()
+        data["root"] = re.sub(r"[+\-*/]", "=", data["root"])
+        del (data[key])
+        left, right = self.resolve_root(data)[1:-1].split(" = ")
+
+        if left.isnumeric():
+            left, right = right, int(left)
+        elif right.isnumeric():
+            right = int(right)
+
+        while left != key:
+            if left.startswith("(") and left.endswith(")"):
+                left = left[1:-1]
+            elif left.startswith(("(", key)):
+                v1, op, v2 = re.search(r"^(.+) ([+\-*/]) (\d+)$", left).groups()
+                left = v1
+                right = self.inverse_right[op](right, int(v2))
+            elif left.endswith((")", key)):
+                v1, op, v2 = re.search(r"^(\d+) ([+\-*/]) (.+)$", left).groups()
+                left = v2
+                right = self.inverse_left[op](right, int(v1))
+            else:
+                return f"{left} = {right}"
+
+        return right
 
 
 def part_1() -> int:
-    data = load_data()
-    return solve(data, "root")
+    mms = MonkeyMathSolver(get_daily_input(DAY))
+    return mms.resolve_root()
 
 
 def part_2() -> int | str:
-    data = load_data()
-    data["root"] = re.sub(r"[+\-*/]", "=", data["root"])
-    del(data["humn"])
-
-    left, right = solve(data, "root")[1:-1].split(" = ")
-    if left.isnumeric():
-        left, right = right, int(left)
-    elif right.isnumeric():
-        right = int(right)
-
-    while left != "humn":
-        if left.startswith("(") and left.endswith(")"):
-            left = left[1:-1]
-        elif left.startswith(("(", "humn")):
-            v1, op, v2 = re.search(r"^(.+) ([+\-*/]) (\d+)$", left).groups()
-            left = v1
-            right = inverse_right[op](right, int(v2))
-        elif left.endswith((")", "humn")):
-            v1, op, v2 = re.search(r"^(\d+) ([+\-*/]) (.+)$", left).groups()
-            left = v2
-            right = inverse_left[op](right, int(v1))
-        else:
-            return f"{left} = {right}"
-
-    return right
+    mms = MonkeyMathSolver(get_daily_input(DAY))
+    return mms.solve_for()
 
 
 def main():
