@@ -1,6 +1,7 @@
 """
 Advent of Code 2022 Day 21
 """
+import re
 import sys
 
 from advent_tools import get_daily_input
@@ -48,24 +49,67 @@ operations: dict[str, callable] = {
     "/": lambda a, b: a // b,
 }
 
+inverse_right: dict[str, callable] = {
+    "+": lambda a, b: a - b,
+    "-": lambda a, b: a + b,
+    "*": lambda a, b: a // b,
+    "/": lambda a, b: a * b,
+}
 
-def solve(data: dict[str, [str | int]], key: str) -> int:
+inverse_left: dict[str, callable] = {
+    "+": lambda a, b: a - b,
+    "-": lambda a, b: (a - b) * -1,
+    "*": lambda a, b: a // b,
+    "/": lambda a, b: b // a,
+}
+
+
+def solve(data: dict[str, [str | int]], key: str) -> int | str:
     if type(data[key]) == int:
         return data[key]
     else:
         v1, op, v2 = data[key].split(" ")
-        return operations[op](solve(data, v1), solve(data, v2))
+        if data.get(v1):
+            v1 = solve(data, v1)
+        if data.get(v2):
+            v2 = solve(data, v2)
+        if type(v1) == int and type(v2) == int:
+            return operations[op](v1, v2)
+        else:
+            return f"({v1} {op} {v2})"
 
 
 def part_1() -> int:
     data = load_data()
-    r = solve(data, "root")
-    return r
+    return solve(data, "root")
 
 
-def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+def part_2() -> int | str:
+    data = load_data()
+    data["root"] = re.sub(r"[+\-*/]", "=", data["root"])
+    del(data["humn"])
+
+    left, right = solve(data, "root")[1:-1].split(" = ")
+    if left.isnumeric():
+        left, right = right, int(left)
+    elif right.isnumeric():
+        right = int(right)
+
+    while left != "humn":
+        if left.startswith("(") and left.endswith(")"):
+            left = left[1:-1]
+        elif left.startswith(("(", "humn")):
+            v1, op, v2 = re.search(r"^(.+) ([+\-*/]) (\d+)$", left).groups()
+            left = v1
+            right = inverse_right[op](right, int(v2))
+        elif left.endswith((")", "humn")):
+            v1, op, v2 = re.search(r"^(\d+) ([+\-*/]) (.+)$", left).groups()
+            left = v2
+            right = inverse_left[op](right, int(v1))
+        else:
+            return f"{left} = {right}"
+
+    return right
 
 
 def main():
