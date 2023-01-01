@@ -175,10 +175,35 @@ def part_1() -> int:
     return 1000 * (row + 1) + 4 * (column + 1) + FACINGS.find(facing)
 
 
+class MonkeyMapCubeNet:
+    def __init__(self, mm):
+        self.map = mm
+        self.height = len(mm)
+        self.width = len(mm[0])
+        self.face_size = self.find_face_size(self.height, self.width)
+
+        self.face_map: list[list[tuple[str, str] | None]] = [
+            [None for _ in range(self.width // self.face_size)]
+            for _ in range(self.height // self.face_size)
+        ]
+
+        self.face_map[0][re.search(r"[.#]", self.map[0]).start() // self.face_size] = \
+            ("u", "rflb")
+        pass
+
+    @classmethod
+    def find_face_size(cls, h, w) -> int:
+        for x, y in [(2,5), (3,4), (4,3), (5,2)]:
+            if h // x == w // y:
+                return h // x
+
+
 def part_2() -> int:
     monkey_map, path, size = load_data()
     row, column = 0, monkey_map[0].find(".")
     facing = ">"
+
+    mm = MonkeyMapCubeNet(monkey_map)
 
     for p in path:
         # print(f"{row}, {column} - {facing}")
