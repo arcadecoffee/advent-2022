@@ -59,7 +59,7 @@ def load_data() -> tuple[list[str], list[str], int]:
 FACINGS = ">v<^"
 
 
-def next_position_v1(mm: list[str], r: int, c: int, f: str) -> tuple[int, int]:
+def next_position_2d(mm: list[str], r: int, c: int, f: str) -> tuple[int, int]:
     if f == ">":
         points = mm[r]
         offset = c
@@ -92,13 +92,7 @@ def next_position_v1(mm: list[str], r: int, c: int, f: str) -> tuple[int, int]:
         return len(points) - offset - 1, c
 
 
-def is_vertex(mm, r, c) -> bool:
-    return 0 < r < len(mm) - 1 and 0 < c < len(mm[r]) - 1 and \
-        1 == sum([mm[i][j] == " " for i, j in [(r - 1, c - 1), (r - 1, c + 1),
-                                               (r + 1, c- 1), (r + 1, c + 1)]])
-
-
-def next_position_v2(mm: list[str], s: int, r: int, c: int, f: str) -> tuple[int, int, str]:
+def next_position_3d(mm: list[str], s: int, r: int, c: int, f: str) -> tuple[int, int, str]:
 
     map_height = len(mm)
     map_width = len(mm[0])
@@ -136,29 +130,31 @@ def next_position_v2(mm: list[str], s: int, r: int, c: int, f: str) -> tuple[int
         nf_name = cf_edges[FACINGS.find(f)]
         nf_map_row, nf_map_col = find_face(nf_name)
         nf_edges = face_map[nf_map_row][nf_map_col][1]
+
         nf = FACINGS[nf_edges.find(cf_name) - 2]
         nr = nf_map_row * s + ((s - 1) if nf == "^" else 0)
         nc = nf_map_col * s + ((s - 1) if nf == "<" else 0)
 
         if (f == ">" and nf == "v") or (f == "<" and nf == "^"):   # 90 cw h to v
-            nc = nc + s - 1 - r % s
-        elif (f == ">" and nf == "<") or (f == "<" and nf == ">"):  # 180 horiz
-            nr = nr + s - 1 - r % s
-        elif (f == ">" and nf == "^") or (f == "<" and nf == "v"):  # 90 ccw h to v
-            nc = nc + r % s
-        elif (f == "^" and nf == "v") or (f == "v" and nf == "^"):  # 180 vert
-            nc = nc + s - 1 - c % s
-        elif (f == "^" and nf == "^") or (f == "v" and nf == "v"):  # 0 vert
-            nc = nc + c % s
+            nc += s - 1 - r % s
         elif (f == "^" and nf == ">") or (f == "v" and nf == "<"):  # 90 cw v to h
-            nr = nr + c % s
+            nr += c % s
+        elif (f == ">" and nf == "^") or (f == "<" and nf == "v"):  # 90 ccw h to v
+            nc += r % s
         elif (f == "v" and nf == ">") or (f == "^" and nf == "<"):  # 90 ccw v to h
-            nr = nr + s - 1 - c % s
+            nr += s - 1 - c % s
+        elif (f == ">" and nf == "<") or (f == "<" and nf == ">"):  # 180 horiz
+            nr += s - 1 - r % s
+        elif (f == "^" and nf == "v") or (f == "v" and nf == "^"):  # 180 vert
+            nc += s - 1 - c % s
         elif (f == "<" and nf == "<") or (f == ">" and nf == ">"):  # 0 horiz
-            nr = nr + r % s
+            nr += r % s
+        elif (f == "^" and nf == "^") or (f == "v" and nf == "v"):  # 0 vert
+            nc += c % s
 
     if mm[nr][nc] == ".":
         r, c, f = nr, nc, nf
+
     return r, c, f
 
 
@@ -170,7 +166,7 @@ def part_1() -> int:
     for p in path:
         if p.isnumeric():
             for _ in range(int(p)):
-                row, column = next_position_v1(monkey_map, row, column, facing)
+                row, column = next_position_2d(monkey_map, row, column, facing)
         elif p == "L":
             facing = FACINGS[FACINGS.find(facing) - 1]
         else:
@@ -189,7 +185,7 @@ def part_2() -> int:
         if p.isnumeric():
             for _ in range(int(p)):
                 row, column, facing = \
-                    next_position_v2(monkey_map, size, row, column, facing)
+                    next_position_3d(monkey_map, size, row, column, facing)
         elif p == "L":
             facing = FACINGS[FACINGS.find(facing) - 1]
         else:
