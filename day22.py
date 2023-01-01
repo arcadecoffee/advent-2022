@@ -99,75 +99,66 @@ def is_vertex(mm, r, c) -> bool:
 
 
 def next_position_v2(mm: list[str], s: int, r: int, c: int, f: str) -> tuple[int, int, str]:
+
     map_height = len(mm)
     map_width = len(mm[0])
 
+    # TEST
+    # face_map = [
+    #     [None, None, ("u", "rflb"), None],
+    #     [("b", "ldru"), ("l", "fdbu"), ("f", "rdlu"), None],
+    #     [None, None, ("d", "rblf"), ("r", "ubdf")],
+    # ]
     face_map = [
-        [None, None, ("u", "rflb"), None],
-        [("b", "ldru"), ("l", "fdbu"), ("f", "rdlu"), None],
-        [None, None, ("d", "rblf"), ("r", "ubdf")],
+        [None, ("u", "rflb"), ("r", "dfub")],
+        [None, ("f", "rdlu"), None],
+        [("l", "dbuf"), ("d", "rblf"), None],
+        [("b", "drul"), None, None]
     ]
 
-    if f == ">":
-        points = mm[r]
-        offset = c
-    elif f == "<":
-        points = "".join(reversed(mm[r]))
-        offset = len(points) - c - 1
-    elif f == "v":
-        points = "".join([m[c] for m in mm])
-        offset = r
-    else:
-        points = "".join([m[c] for m in reversed(mm)])
-        offset = len(points) - r - 1
-
-    if offset < len(points) - 1 and points[offset + 1] == ".":
-        offset = offset + 1
-        if f == ">":
-            return r, offset, f
-        elif f == "<":
-            return r, len(points) - offset - 1, f
-        elif f == "v":
-            return offset, c, f
-        else:
-            return len(points) - offset - 1, c, f
-
-    elif offset >= len(points) - 1 or points[offset + 1] == " ":
-        # we're on the edge!
-        curr_face, curr_edges = face_map[r // s][c // s]
-        next_face = curr_edges[FACINGS.find(f)]
-
-        next_fm = None
+    def find_face(target_face: str) -> tuple[int, int]:
         for i in range(len(face_map)):
-            for j in range(len(face_map[0])):
-                if face_map[i][j] and face_map[i][j][0] == next_face:
-                    next_fm = i, j
-                    break
-            if next_fm:
-                break
+            for j in range(len(face_map[i])):
+                if face_map[i][j] and face_map[i][j][0] == target_face:
+                    return i, j
 
-        next_edges = face_map[next_fm[0]][next_fm[1]][1]
-        next_facing = FACINGS[next_edges.find(curr_face) - 2]
+    nr, nc, nf = r, c, f
+    if f == ">" and c + 1 < map_width and mm[r][c + 1] != " ":
+        nc += 1
+    elif f == "<" and c > 0 and mm[r][c - 1] != " ":
+        nc -= 1
+    elif f == "^" and r > 0 and mm[r - 1][c] != " ":
+        nr -= 1
+    elif f == "v" and r + 1 < map_height and mm[r + 1][c] != " ":
+        nr += 1
+    else:
+        cf_name, cf_edges = face_map[r // s][c // s]
+        nf_name = cf_edges[FACINGS.find(f)]
+        nf_map_row, nf_map_col = find_face(nf_name)
+        nf_edges = face_map[nf_map_row][nf_map_col][1]
+        nf = FACINGS[nf_edges.find(cf_name) - 2]
+        nr = nf_map_row * s + ((s - 1) if nf == "^" else 0)
+        nc = nf_map_col * s + ((s - 1) if nf == "<" else 0)
 
-        nr = next_fm[0] * s + ((s - 1) if next_facing == "^" else 0)
-        nc = next_fm[1] * s + ((s -1 ) if next_facing == "<" else 0)
-
-        if (next_facing == "v" and f == ">") or (next_facing == "^" and f == "<"):
+        if (f == ">" and nf == "v") or (f == "<" and nf == "^"):   # 90 cw h to v
             nc = nc + s - 1 - r % s
-        elif (next_facing == "v" and f == "<") or (next_facing == "^" and f == "<"):
+        elif (f == ">" and nf == "<") or (f == "<" and nf == ">"):  # 180 horiz
+            nr = nr + s - 1 - r % s
+        elif (f == ">" and nf == "^") or (f == "<" and nf == "v"):  # 90 ccw h to v
             nc = nc + r % s
-        elif (next_facing == "v" and f == "^") or (next_facing == "^" and f == "v"):
+        elif (f == "^" and nf == "v") or (f == "v" and nf == "^"):  # 180 vert
             nc = nc + s - 1 - c % s
-        elif (next_facing == ">" and f == "^") or (next_facing == "<" and f == "v"):
+        elif (f == "^" and nf == "^") or (f == "v" and nf == "v"):  # 0 vert
+            nc = nc + c % s
+        elif (f == "^" and nf == ">") or (f == "v" and nf == "<"):  # 90 cw v to h
             nr = nr + c % s
-        elif (next_facing == ">" and f == "v") or (next_facing == "<" and f == "^"):
+        elif (f == "v" and nf == ">") or (f == "^" and nf == "<"):  # 90 ccw v to h
             nr = nr + s - 1 - c % s
-        elif (next_facing == ">" and f == "<") or (next_facing == "<" and f == ">"):
-            nr = nr + s - 1 - c % s
+        elif (f == "<" and nf == "<") or (f == ">" and nf == ">"):  # 0 horiz
+            nr = nr + r % s
 
-        if mm[nr][nc] == ".":
-            return nr, nc, next_facing
-
+    if mm[nr][nc] == ".":
+        r, c, f = nr, nc, nf
     return r, c, f
 
 
@@ -194,6 +185,7 @@ def part_2() -> int:
     facing = ">"
 
     for p in path:
+        # print(f"{row}, {column} - {facing}")
         if p.isnumeric():
             for _ in range(int(p)):
                 row, column, facing = \
@@ -216,4 +208,5 @@ if __name__ == "__main__":
 
 """
 Part 1: 75254
+Part 2: 108311
 """
