@@ -202,7 +202,7 @@ class MonkeyMap:
 
     @classmethod
     def find_face_size(cls, h, w) -> int:
-        for x, y in [(2,5), (3,4), (4,3), (5,2)]:
+        for x, y in [(2, 5), (3, 4), (4, 3), (5, 2)]:
             if h // x == w // y:
                 return h // x
 
