@@ -197,36 +197,21 @@ class MonkeyMapCubeNet:
         self.face_map[0][first_face[1]] = ("u", "rflb")
         self._add_sides(*first_face)
 
-    def _add_sides(self, r: int, c: int) -> None:
-        cf = self.face_map[r][c][0]
-        if r > 0 and not self.face_map[r - 1][c] and self.map[(r - 1) * self.face_size][c * self.face_size] != " ":
-            nf = self.face_map[r][c][1][3]
-            ne = self.adjacent[nf]
-            while ne[1] != cf:
-                ne = ne[1:] + ne[0]
-            self.face_map[r - 1][c] = (nf, ne)
-            self._add_sides(r - 1, c)
-        if r + 1 < len(self.face_map) and not self.face_map[r + 1][c] and self.map[(r + 1) * self.face_size][c * self.face_size] != " ":
-            nf = self.face_map[r][c][1][1]
-            ne = self.adjacent[nf]
-            while ne[3] != cf:
-                ne = ne[1:] + ne[0]
-            self.face_map[r + 1][c] = (nf, ne)
-            self._add_sides(r + 1, c)
-        if c > 0 and not self.face_map[r][c - 1] and self.map[r * self.face_size][(c - 1) * self.face_size] != " ":
-            nf = self.face_map[r][c][1][2]
-            ne = self.adjacent[nf]
-            while ne[0] != cf:
-                ne = ne[1:] + ne[0]
-            self.face_map[r][c - 1] = (nf, ne)
-            self._add_sides(r, c - 1)
-        if c + 1 < len(self.face_map[r]) and not self.face_map[r][c + 1] and self.map[r * self.face_size][(c + 1) * self.face_size] != " ":
-            nf = self.face_map[r][c][1][0]
-            ne = self.adjacent[nf]
-            while ne[2] != cf:
-                ne = ne[1:] + ne[0]
-            self.face_map[r][c + 1] = (nf, ne)
-            self._add_sides(r, c + 1)
+    def _add_sides(self, r_in: int, c_in: int) -> None:
+        cf, ce = self.face_map[r_in][c_in]
+
+        for r, c, d, e in [(r_in - 1, c_in, 3, 1), (r_in + 1, c_in, 1, 3),
+                           (r_in, c_in - 1, 2, 0), (r_in, c_in + 1, 0, 2)]:
+            if 0 <= r < len(self.face_map) \
+                    and 0 <= c < len(self.face_map[0]) \
+                    and not self.face_map[r][c] \
+                    and self.map[r * self.face_size][c * self.face_size] != " ":
+                nf = ce[d]
+                ne = self.adjacent[nf]
+                while ne[e] != cf:
+                    ne = ne[1:] + ne[0]
+                self.face_map[r][c] = (nf, ne)
+                self._add_sides(r, c)
 
     @classmethod
     def find_face_size(cls, h, w) -> int:
