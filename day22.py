@@ -176,6 +176,12 @@ def part_1() -> int:
 
 
 class MonkeyMapCubeNet:
+    adjacent = {
+        "u": "rflb", "d": "rblf",
+        "f": "rdlu", "b": "ldru",
+        "l": "fdbu", "r": "bdfu"
+    }
+
     def __init__(self, mm):
         self.map = mm
         self.height = len(mm)
@@ -187,9 +193,40 @@ class MonkeyMapCubeNet:
             for _ in range(self.height // self.face_size)
         ]
 
-        self.face_map[0][re.search(r"[.#]", self.map[0]).start() // self.face_size] = \
-            ("u", "rflb")
-        pass
+        first_face = (0, re.search(r"[.#]", self.map[0]).start() // self.face_size)
+        self.face_map[0][first_face[1]] = ("u", "rflb")
+        self._add_sides(*first_face)
+
+    def _add_sides(self, r: int, c: int) -> None:
+        cf = self.face_map[r][c][0]
+        if r > 0 and not self.face_map[r - 1][c] and self.map[(r - 1) * self.face_size][c * self.face_size] != " ":
+            nf = self.face_map[r][c][1][3]
+            ne = self.adjacent[nf]
+            while ne[1] != cf:
+                ne = ne[1:] + ne[0]
+            self.face_map[r - 1][c] = (nf, ne)
+            self._add_sides(r - 1, c)
+        if r + 1 < len(self.face_map) and not self.face_map[r + 1][c] and self.map[(r + 1) * self.face_size][c * self.face_size] != " ":
+            nf = self.face_map[r][c][1][1]
+            ne = self.adjacent[nf]
+            while ne[3] != cf:
+                ne = ne[1:] + ne[0]
+            self.face_map[r + 1][c] = (nf, ne)
+            self._add_sides(r + 1, c)
+        if c > 0 and not self.face_map[r][c - 1] and self.map[r * self.face_size][(c - 1) * self.face_size] != " ":
+            nf = self.face_map[r][c][1][2]
+            ne = self.adjacent[nf]
+            while ne[0] != cf:
+                ne = ne[1:] + ne[0]
+            self.face_map[r][c - 1] = (nf, ne)
+            self._add_sides(r, c - 1)
+        if c + 1 < len(self.face_map[r]) and not self.face_map[r][c + 1] and self.map[r * self.face_size][(c + 1) * self.face_size] != " ":
+            nf = self.face_map[r][c][1][0]
+            ne = self.adjacent[nf]
+            while ne[2] != cf:
+                ne = ne[1:] + ne[0]
+            self.face_map[r][c + 1] = (nf, ne)
+            self._add_sides(r, c + 1)
 
     @classmethod
     def find_face_size(cls, h, w) -> int:
