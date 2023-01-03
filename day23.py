@@ -111,8 +111,18 @@ def part_1() -> int:
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    map_data = load_data()
+    prev_map_data = None
+    rule_order = "NSWE"
+    i = 0
+    while prev_map_data != map_data:
+        i += 1
+        prev_map_data = map_data
+        map_data = pad_map(map_data)
+        map_data = make_moves(map_data, rule_order)
+        map_data = prune_map(map_data)
+        rule_order = rule_order[1:] + rule_order[0]
+    return i
 
 
 def main():
@@ -125,4 +135,5 @@ if __name__ == "__main__":
 
 """
 Part 1: 4146
+Part 2: 957
 """
