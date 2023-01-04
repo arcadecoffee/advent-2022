@@ -4,7 +4,6 @@ Advent of Code 2022 Day 24
 import sys
 
 from collections import namedtuple
-from itertools import cycle
 
 from advent_tools import get_daily_input
 
@@ -31,8 +30,7 @@ class BlizzardBasin:
     Position = namedtuple("Position", "x y")
 
     def __init__(self, map_state: list[list[str]]) -> None:
-        self.map_frames = self.prerender_frames(map_state)
-        self.map_frame_cycle = cycle(self.map_frames)
+        self.map_state = map_state
         self.height, self.width = len(map_state), len(map_state[0])
         self.start = self.Position(0, map_state[0].index("."))
         self.end = self.Position(len(map_state) - 1, map_state[-1].index("."))
@@ -43,12 +41,12 @@ class BlizzardBasin:
         while b not in reachable:
             next_reachable = {}
             steps += 1
-            frame = next(self.map_frame_cycle)
+            self.map_state = self.get_next(self.map_state)
             for k, v in reachable.items():
                 for x, y in [(-1, 0), (1, 0), (0, -1), (0, 1), (0, 0)]:
                     pos = self.Position(k.x + x, k.y + y)
                     if (pos.x < self.height and pos.y < self.width
-                            and frame[pos.x][pos.y] == "."):
+                            and self.map_state[pos.x][pos.y] == "."):
                         next_reachable[pos] = v + 1
             reachable = next_reachable
         return steps
@@ -67,16 +65,6 @@ class BlizzardBasin:
                                          w in cropped_map[i + x][j + y]]) or ".")
             new_data.append(new_row + ["#"])
         return new_data + [map_state[-1]]
-
-    @classmethod
-    def prerender_frames(cls, map_state: list[list[str]]) -> list[list[list[str]]]:
-        frames: list[list[list[str]]] = []
-        next_data = cls.get_next(map_state)
-        while next_data != map_state:
-            frames.append(next_data)
-            next_data = cls.get_next(next_data)
-        frames.append(map_state)
-        return frames
 
 
 def load_data() -> list[list[str]]:
