@@ -2,8 +2,8 @@
 Advent of Code 2022 Day 24
 """
 import sys
-from collections import namedtuple
 
+from collections import namedtuple
 from itertools import cycle
 
 from advent_tools import get_daily_input
