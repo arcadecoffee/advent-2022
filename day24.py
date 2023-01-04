@@ -2,6 +2,7 @@
 Advent of Code 2022 Day 24
 """
 import sys
+from collections import namedtuple
 
 from dataclasses import dataclass
 from functools import cache
@@ -27,121 +28,57 @@ if TEST:
             yield line.strip("\n")
 
 
-@dataclass
-class Location:
-    wall: bool = False
-    N: bool = False
-    S: bool = False
-    E: bool = False
-    W: bool = False
+Position = namedtuple("Position", "x y")
 
-    @property
-    def vacant(self) -> bool:
-        return not (self.wall or self.N or self.S or self.E or self.W)
-
-    def __repr__(self):
-        if self.wall:
-            return "#"
-
-        cnt = self.N + self.S + self.E + self.W
-        if not cnt:
-            return "."
-        if cnt > 1:
-            return str(cnt)
-        if self.N:
-            return "^"
-        if self.S:
-            return "v"
-        if self.E:
-            return ">"
-        if self.W:
-            return "<"
+def load_data() -> list[list[str]]:
+    return [[c for c in i] for i in get_daily_input(DAY)]
 
 
-def load_data() -> list[list[Location]]:
-    locs = {".": Location(), "#": Location(wall=True), "^": Location(N=True),
-            "v": Location(S=True), ">": Location(E=True), "<": Location(W=True)}
-    data = [[locs[c] for c in r] for r in get_daily_input(DAY)]
-    return data
+def get_next(data: list[list[str]]) -> list[list[str]]:
+    top, bottom = data[0], data[-1]
+    data = [[r[-2]] + r[1:-1] + [r[1]] for r in [data[-2]] + data[1:-1] + [data[1]]]
+    new_data = []
+    for i in range(1, len(data) - 1):
+        new_data.append([])
+        new_data[-1].append("#")
+        for j in range(1, len(data[i]) - 1):
+            d = ""
+            for w, x, y in [("v", -1, 0), ("^", 1, 0), (">", 0, -1), ("<", 0, 1)]:
+                if w in data[i + x][j + y]:
+                    d += w
+            new_data[-1].append(d if d else ".")
+        new_data[-1].append("#")
+    return [top] + new_data + [bottom]
 
 
-class WindMap:
-    def __init__(self, curr_map: list[list[Location]]):
-        self.map = curr_map
-
-    def __hash__(self):
-        return hash("\n".join(["".join([str(c) for c in r]) for r in self.map]))
-
-
-@cache
-def get_next_map(curr: WindMap) -> WindMap:
-    next_map = [curr.map[0]]
-    ht, wt = len(curr.map), len(curr.map[0])
-    for r in range(1, ht - 1):
-        nr = [Location(wall=True)]
-        for c in range(1, wt - 1):
-            nr.append(
-                Location(
-                    N=curr.map[1][c].N if r + 2 == ht else curr.map[r + 1][c].N,
-                    S=curr.map[-2][c].S if r == 1 else curr.map[r - 1][c].S,
-                    E=curr.map[r][-2].E if c == 1 else curr.map[r][c - 1].E,
-                    W=curr.map[r][1].W if c + 2 == wt else curr.map[r][c + 1].W
-                )
-            )
-        nr.append(Location(wall=True))
-        next_map.append(nr)
-    next_map.append(curr.map[-1])
-    return WindMap(next_map)
-
-
-@cache
-def get_options(curr: WindMap, curr_location: tuple[int, int]) -> list[tuple[int, int]]:
-    options = []
-    r, c = curr_location
-    for x, y in [(1, 0), (-1, 0), (0, 1), (0, -1), (0, 0)]:
-        if 0 <= r + x < len(curr.map) and 0 <= c + y < len(curr.map[r]) and \
-                curr.map[r + x][c + y].vacant:
-            options.append((r + x, c + y))
-    return options
-
-
-def distance(a: tuple[int, int], b: tuple[int, int]) -> int:
-    return (b[0] - a[0]) + (b[1] - a[1])
-
-
-def dump_map(m: list[list[Location]]) -> str:
-    return "\n".join(["".join([str(c) for c in r]) for r in m])
+def dump(data: list[list[str]]) -> str:
+    return "\n".join(["".join([c if len(c) == 1 else str(len(c)) for c in d])
+                      for d in data])
 
 
 def part_1() -> int:
-    curr: WindMap = WindMap(load_data())
-    goal = len(curr.map) - 1, len(curr.map[0]) - 2
+    data_frames = [load_data()]
+    next_data = get_next(data_frames[-1])
+    while next_data != data_frames[0]:
+        data_frames.append(next_data)
+        next_data = get_next(next_data)
 
-    found = []
-    paths = [[(0, 1)]]
-    visited = []
-    while not found:
-        curr = get_next_map(curr)
-
-        next_paths = []
-        for path in paths:
-            if (curr, path[-1]) not in visited:
-                for option in get_options(curr, path[-1]):
-                    if option == goal:
-                        found = path + [option]
-                        break
-                    next_paths.append(path + [option])
-                visited.append((curr, path[-1]))
-            if found:
-                break
-            paths = next_paths
-
-    return len(found) - 1
+    target = Position(len(data_frames[0]) - 1, data_frames[0][-1].index("."))
+    passes: list[dict[Position, int]] = [{Position(0, 1): 0}]
+    while target not in passes[-1]:
+        f = len(passes) % len(data_frames)
+        next_pass = {}
+        for k, v in passes[-1].items():
+            for x, y in [(-1, 0), (1, 0), (0, -1), (0, 1), (0, 0)]:
+                pos = Position(k.x + x, k.y + y)
+                if data_frames[f][pos.x][pos.y] == ".":
+                    next_pass[pos] = v + 1
+        passes.append(next_pass)
+    return len(passes) - 1
 
 
 def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    return 42
 
 
 def main():
@@ -151,3 +88,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
+Part 1: 247
+"""
