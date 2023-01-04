@@ -61,7 +61,10 @@ class BlizzardBasin:
         for i in range(1, len(cropped_map) - 1):
             new_row = ["#"]
             for j in range(1, len(cropped_map[i]) - 1):
-                new_row.append(".".join([w for w, x, y in [("v", -1, 0), ("^", 1, 0), (">", 0, -1), ("<", 0, 1)] if w in cropped_map[i + x][j + y]]) or ".")
+                new_row.append(".".join([w for w, x, y in
+                                         [("v", -1, 0), ("^", 1, 0),
+                                          (">", 0, -1), ("<", 0, 1)] if
+                                         w in cropped_map[i + x][j + y]]) or ".")
             new_data.append(new_row + ["#"])
         return new_data + [map_state[-1]]
 
@@ -92,8 +95,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-Part 1: 247
-Part 2: 728
-"""
