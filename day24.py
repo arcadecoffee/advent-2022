@@ -4,8 +4,7 @@ Advent of Code 2022 Day 24
 import sys
 from collections import namedtuple
 
-from dataclasses import dataclass
-from functools import cache
+from itertools import cycle
 
 from advent_tools import get_daily_input
 
@@ -28,62 +27,67 @@ if TEST:
             yield line.strip("\n")
 
 
-Position = namedtuple("Position", "x y")
+class BlizzardBasin:
+    Position = namedtuple("Position", "x y")
+
+    def __init__(self, map_state: list[list[str]]) -> None:
+        self.map_frames = self.prerender_frames(map_state)
+        self.map_frame_cycle = cycle(self.map_frames)
+        self.height, self.width = len(map_state), len(map_state[0])
+        self.start = self.Position(0, map_state[0].index("."))
+        self.end = self.Position(len(map_state) - 1, map_state[-1].index("."))
+
+    def walk(self, a: Position, b: Position) -> int:
+        steps = 0
+        reachable = {a: 0}
+        while b not in reachable:
+            next_reachable = {}
+            steps += 1
+            frame = next(self.map_frame_cycle)
+            for k, v in reachable.items():
+                for x, y in [(-1, 0), (1, 0), (0, -1), (0, 1), (0, 0)]:
+                    pos = self.Position(k.x + x, k.y + y)
+                    if (pos.x < self.height and pos.y < self.width
+                            and frame[pos.x][pos.y] == "."):
+                        next_reachable[pos] = v + 1
+            reachable = next_reachable
+        return steps
+
+    @classmethod
+    def get_next(cls, map_state: list[list[str]]) -> list[list[str]]:
+        cropped_map = [[r[-2]] + r[1:-1] + [r[1]]
+                       for r in [map_state[-2]] + map_state[1:-1] + [map_state[1]]]
+        new_data = [map_state[0]]
+        for i in range(1, len(cropped_map) - 1):
+            new_row = ["#"]
+            for j in range(1, len(cropped_map[i]) - 1):
+                new_row.append(".".join([w for w, x, y in [("v", -1, 0), ("^", 1, 0), (">", 0, -1), ("<", 0, 1)] if w in cropped_map[i + x][j + y]]) or ".")
+            new_data.append(new_row + ["#"])
+        return new_data + [map_state[-1]]
+
+    @classmethod
+    def prerender_frames(cls, map_state: list[list[str]]) -> list[list[list[str]]]:
+        frames: list[list[list[str]]] = []
+        next_data = cls.get_next(map_state)
+        while next_data != map_state:
+            frames.append(next_data)
+            next_data = cls.get_next(next_data)
+        frames.append(map_state)
+        return frames
+
 
 def load_data() -> list[list[str]]:
     return [[c for c in i] for i in get_daily_input(DAY)]
 
 
-def get_next(data: list[list[str]]) -> list[list[str]]:
-    top, bottom = data[0], data[-1]
-    data = [[r[-2]] + r[1:-1] + [r[1]] for r in [data[-2]] + data[1:-1] + [data[1]]]
-    new_data = []
-    for i in range(1, len(data) - 1):
-        new_data.append([])
-        new_data[-1].append("#")
-        for j in range(1, len(data[i]) - 1):
-            d = ""
-            for w, x, y in [("v", -1, 0), ("^", 1, 0), (">", 0, -1), ("<", 0, 1)]:
-                if w in data[i + x][j + y]:
-                    d += w
-            new_data[-1].append(d if d else ".")
-        new_data[-1].append("#")
-    return [top] + new_data + [bottom]
-
-
-def dump(data: list[list[str]]) -> str:
-    return "\n".join(["".join([c if len(c) == 1 else str(len(c)) for c in d])
-                      for d in data])
-
-
-def part_1() -> int:
-    data_frames = [load_data()]
-    next_data = get_next(data_frames[-1])
-    while next_data != data_frames[0]:
-        data_frames.append(next_data)
-        next_data = get_next(next_data)
-
-    target = Position(len(data_frames[0]) - 1, data_frames[0][-1].index("."))
-    passes: list[dict[Position, int]] = [{Position(0, 1): 0}]
-    while target not in passes[-1]:
-        f = len(passes) % len(data_frames)
-        next_pass = {}
-        for k, v in passes[-1].items():
-            for x, y in [(-1, 0), (1, 0), (0, -1), (0, 1), (0, 0)]:
-                pos = Position(k.x + x, k.y + y)
-                if data_frames[f][pos.x][pos.y] == ".":
-                    next_pass[pos] = v + 1
-        passes.append(next_pass)
-    return len(passes) - 1
-
-
-def part_2() -> int:
-    return 42
-
-
 def main():
-    print(f"Part 1: {part_1()}")
-    print(f"Part 2: {part_2()}")
+    bb = BlizzardBasin(load_data())
+
+    part_1 = bb.walk(bb.start, bb.end)
+    print(f"Part 1: {part_1}")
+
+    part_2 = part_1 + bb.walk(bb.end, bb.start) + bb.walk(bb.start, bb.end)
+    print(f"Part 2: {part_2}")
 
 
 if __name__ == "__main__":
@@ -91,4 +95,5 @@ if __name__ == "__main__":
 
 """
 Part 1: 247
+Part 2: 728
 """
