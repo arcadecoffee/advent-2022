@@ -60,8 +60,7 @@ class SnafuNumber:
         for v in [int(i) for i in reversed(value)]:
             nv = v + carry
             carry = 1 if nv > 2 else 0
-            nv -= 5 if nv > 2 else 0
-            sn.append(cls.dd_to_sd(nv))
+            sn.append(cls.dd_to_sd(nv - (5 if nv > 2 else 0)))
         sn.append(str(carry))
         return SnafuNumber("".join(map(str, sn[::-1])).lstrip("0"))
 
