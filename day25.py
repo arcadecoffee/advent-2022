@@ -35,6 +35,14 @@ class SnafuNumber:
     def __init__(self, val: str = None):
         self.val = val or "0"
 
+    def __add__(self, other: "SnafuNumber") -> "SnafuNumber":
+        dv = int(self.base_5, 5) + int(other.base_5, 5)
+        rv = ""
+        while dv:
+            rv += str(dv % 5)
+            dv = dv // 5
+        return SnafuNumber.from_base_5(rv[::-1])
+
     @property
     def base_5(self) -> str:
         result = ""
@@ -44,14 +52,6 @@ class SnafuNumber:
             carry = 1 if v < 0 else 0
             result += str(v + (5 if v < 0 else 0))
         return "".join((map(str, result[::-1]))).lstrip("0") or "0"
-
-    def __add__(self, other: "SnafuNumber") -> "SnafuNumber":
-        dv = int(self.base_5, 5) + int(other.base_5, 5)
-        rv = ""
-        while dv:
-            rv += str(dv % 5)
-            dv = dv // 5
-        return SnafuNumber.from_base_5(rv[::-1])
 
     @classmethod
     def from_base_5(cls, value: str) -> "SnafuNumber":
@@ -75,21 +75,11 @@ class SnafuNumber:
 
 
 def part_1() -> str:
-    total = SnafuNumber()
-    for d in get_daily_input(DAY):
-        total += SnafuNumber(d)
-        pass
-    return total.val
-
-
-def part_2() -> int:
-    data = get_daily_input(DAY)
-    return len(list(data))
+    return sum(map(SnafuNumber, get_daily_input(DAY)), SnafuNumber()).val
 
 
 def main():
     print(f"Part 1: {part_1()}")
-    print(f"Part 2: {part_2()}")
 
 
 if __name__ == "__main__":
