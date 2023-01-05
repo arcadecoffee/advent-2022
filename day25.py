@@ -73,12 +73,9 @@ class SnafuNumber:
         return "-" if v == -1 else "=" if v == -2 else str(v)
 
 
-def part_1() -> str:
-    return sum(map(SnafuNumber, get_daily_input(DAY)), SnafuNumber()).val
-
-
 def main():
-    print(f"Part 1: {part_1()}")
+    part_1 = sum(map(SnafuNumber, get_daily_input(DAY)), SnafuNumber()).val
+    print(f"Part 1: {part_1}")
 
 
 if __name__ == "__main__":
